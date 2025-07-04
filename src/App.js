@@ -1,8 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import RegistroProveedor from './pages/RegistroProveedor';
-// Se importa el nuevo componente para visualizar proveedores.
-import VerProveedores from './pages/VerProveedores'; 
+import VerProveedores from './pages/VerProveedores';
+// Se importa el nuevo componente para el detalle del proveedor.
+import DetalleProveedor from './pages/DetalleProveedor';
 
 function App() {
   return (
@@ -11,7 +12,7 @@ function App() {
         <nav>
           <h1>Gestión de Proveedores</h1>
           <Link to="/registrar-proveedor">Registrar Nuevo Proveedor</Link>
-          {' | '} {/* Se añade un separador visual */}
+          {' | '}
           <Link to="/ver-proveedores">Ver Proveedores</Link>
         </nav>
 
@@ -19,8 +20,9 @@ function App() {
 
         <Routes>
           <Route path="/registrar-proveedor" element={<RegistroProveedor />} />
-          {/* Se define la nueva ruta para la lista de proveedores. */}
           <Route path="/ver-proveedores" element={<VerProveedores />} />
+          {/* Se define la ruta dinámica. ':proveedorId' será el parámetro. */}
+          <Route path="/proveedor/:proveedorId" element={<DetalleProveedor />} />
           <Route path="/" element={<h2>Bienvenido al sistema</h2>} />
         </Routes>
       </div>
