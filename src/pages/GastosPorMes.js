@@ -41,10 +41,10 @@ function GastosPorMes() {
     calcularGastos();
   }, []);
 
-  const generateExcel = async () => {
+  const generateExcel = async (reportType) => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Gastos por Mes');
+      const worksheet = workbook.addWorksheet(reportType);
 
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBuffer = await response.arrayBuffer();
@@ -53,32 +53,45 @@ function GastosPorMes() {
         buffer: imageBuffer,
         extension: 'png',
       });
-      worksheet.addImage(imageId, 'A1:D4');
 
-      worksheet.mergeCells('A5:D5');
-      const titleCell = worksheet.getCell('A5');
-      titleCell.value = 'Totales por Mes';
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: 0 },
+        ext: { width: 350, height: 88 }
+      });
+      
+      const contentStartRow = 6;
+
+      worksheet.mergeCells(`A${contentStartRow}:D${contentStartRow}`);
+      const titleCell = worksheet.getCell(`A${contentStartRow}`);
+      titleCell.value = `Totales por ${reportType}`;
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.font = { bold: true, size: 16 };
-      worksheet.getRow(5).height = 30;
+      worksheet.getRow(contentStartRow).height = 30;
 
-      worksheet.getRow(6).values = ['Mes', 'Año', 'Nº de Facturas', 'Monto Total'];
-      worksheet.getRow(6).font = { bold: true };
+      const headerRow = worksheet.getRow(contentStartRow + 1);
+      headerRow.font = { bold: true };
 
-      gastos.forEach(gasto => {
-        worksheet.addRow([
-          nombresMeses[gasto.mes],
-          gasto.anio,
-          gasto.conteo,
-          gasto.total
-        ]);
-      });
-
+      if (reportType === 'Mes') {
+        headerRow.values = ['Mes', 'Año', 'Nº de Facturas', 'Monto Total'];
+        gastos.forEach(gasto => {
+          worksheet.addRow([
+            nombresMeses[gasto.mes], gasto.anio, gasto.conteo, gasto.total
+          ]);
+        });
+      } else { 
+        headerRow.values = ['ID Proveedor', 'Nombre', 'Nº de Facturas', 'Monto Total'];
+        gastos.forEach(gasto => {
+          worksheet.addRow([
+            gasto.idProveedor, gasto.nombre, gasto.conteo, gasto.total
+          ]);
+        });
+      }
+      
       worksheet.getColumn(4).numFmt = '$#,##0.00';
-      worksheet.columns.forEach(column => { column.width = 20; });
+      worksheet.columns.forEach(column => { column.width = 25; });
       
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), 'Reporte_Gastos_por_Mes.xlsx');
+      saveAs(new Blob([buffer]), `Reporte_Gastos_por_${reportType}.xlsx`);
 
     } catch (error) {
       console.error("Error al generar el archivo Excel:", error);
@@ -93,7 +106,7 @@ function GastosPorMes() {
   return (
     <div>
       <h2>Reporte de Gastos por Mes</h2>
-      <button onClick={generateExcel} disabled={gastos.length === 0}>
+      <button onClick={() => generateExcel('Mes')} disabled={gastos.length === 0}>
         Generar Excel
       </button>
       <table border="1" style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px' }}>
