@@ -1,5 +1,3 @@
-// src/pages/DetalleFactura.js
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
@@ -47,6 +45,33 @@ function DetalleFactura() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+  
+  // --- SE AÑADEN LAS FUNCIONES Y CONSTANTES PARA EL MONTO ---
+  const MIN_MONTO = 1;
+  const MAX_MONTO = 5000000;
+
+  const ajustarMonto = (ajuste) => {
+    const montoActual = parseFloat(formData.monto) || 0;
+    let nuevoMonto = montoActual + ajuste;
+    nuevoMonto = Math.max(MIN_MONTO, Math.min(nuevoMonto, MAX_MONTO));
+    // Se actualiza el campo 'monto' dentro del estado 'formData'
+    setFormData(prev => ({ ...prev, monto: String(nuevoMonto) }));
+  };
+
+  const handleMontoChange = (e) => {
+    const valor = e.target.value;
+    if (valor === '') {
+        setFormData(prev => ({ ...prev, monto: '' }));
+        return;
+    }
+    const numero = parseFloat(valor);
+    if (numero > MAX_MONTO) {
+        setFormData(prev => ({ ...prev, monto: String(MAX_MONTO) }));
+    } else {
+        setFormData(prev => ({ ...prev, monto: valor }));
+    }
+  };
+  // --- FIN DE LAS NUEVAS FUNCIONES ---
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -83,6 +108,7 @@ function DetalleFactura() {
     <div>
       <h2>Detalle de Factura</h2>
       {!isEditing ? (
+        // MODO VISTA
         <div>
           {factura && (
             <div>
@@ -98,6 +124,7 @@ function DetalleFactura() {
           <button onClick={handleDelete} style={{ marginLeft: '10px' }}>🗑️ Eliminar</button>
         </div>
       ) : (
+        // MODO EDICIÓN
         <form onSubmit={handleUpdate}>
           <p><strong>Proveedor:</strong> {formData.nombreProveedor}</p>
           <div>
@@ -112,10 +139,41 @@ function DetalleFactura() {
             <label>Descripción:</label>
             <textarea name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea>
           </div>
+
+          {/* --- SECCIÓN DEL MONTO ACTUALIZADA --- */}
           <div>
             <label>Monto:</label>
-            <input type="number" name="monto" value={formData.monto} onChange={handleChange} required />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+                <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+                <div style={{ position: 'relative' }}>
+                <span style={{
+                    position: 'absolute',
+                    left: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#333',
+                    pointerEvents: 'none'
+                }}>
+                    $
+                </span>
+                <input
+                    type="number"
+                    name="monto"
+                    value={formData.monto}
+                    onChange={handleMontoChange}
+                    min={MIN_MONTO}
+                    max={MAX_MONTO}
+                    required
+                    style={{ textAlign: 'center', paddingLeft: '20px' }}
+                />
+                </div>
+                <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+                <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+            </div>
           </div>
+          {/* --- FIN DE LA SECCIÓN DEL MONTO --- */}
+
           <div>
             <label>Estatus:</label>
             <select name="estatus" value={formData.estatus} onChange={handleChange} required>
