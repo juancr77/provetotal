@@ -1,148 +1,149 @@
-import React, { useState, useEffect } from 'react';
-// Se importan los hooks y funciones necesarias.
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function DetalleProveedor() {
   const { proveedorId } = useParams();
-  const navigate = useNavigate(); // Hook para la navegación programática.
-  
+  const navigate = useNavigate();
+  const detalleRef = useRef();
+
   const [proveedor, setProveedor] = useState(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Se añade un estado para controlar el "modo edición".
   const [isEditing, setIsEditing] = useState(false);
-  // Se añade un estado para manejar los datos del formulario de edición.
   const [formData, setFormData] = useState({});
-  // Se añade un estado para deshabilitar botones durante el envío.
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
 
-  // El efecto se sigue ejecutando para obtener los datos iniciales.
   useEffect(() => {
-    const obtenerProveedor = async () => {
-      setCargando(true);
+    const fetchProveedor = async () => {
       try {
         const docRef = doc(db, "proveedores", proveedorId);
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          setProveedor(data);
-          // Se inicializa el estado del formulario con los datos obtenidos.
-          setFormData(data);
+          setProveedor(docSnap.data());
+          setFormData(docSnap.data());
         } else {
-          setError("No se encontró el proveedor especificado.");
+          setError("No se encontró el proveedor.");
         }
       } catch (err) {
-        console.error("Error al obtener el documento:", err);
-        setError("Ocurrió un error al cargar los datos del proveedor.");
+        setError("Error al cargar los datos del proveedor.");
       } finally {
         setCargando(false);
       }
     };
-
-    obtenerProveedor();
+    fetchProveedor();
   }, [proveedorId]);
 
-  // Función para manejar los cambios en los inputs del modo edición.
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Función para guardar los cambios (Update).
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-    
-    // Se crea una referencia al documento que se va a actualizar.
-    const docRef = doc(db, "proveedores", proveedorId);
     try {
-      // Se actualiza el documento en Firestore.
+      const docRef = doc(db, "proveedores", proveedorId);
       await updateDoc(docRef, formData);
-      // Se actualiza el estado local para reflejar los cambios inmediatamente.
       setProveedor(formData);
-      // Se sale del modo edición.
       setIsEditing(false);
     } catch (err) {
-      console.error("Error al actualizar el proveedor: ", err);
-      setError("No se pudo actualizar el proveedor.");
-    } finally {
-      setIsSubmitting(false);
+      setError("Error al actualizar los datos del proveedor.");
     }
   };
 
-  // Función para eliminar el proveedor (Delete).
   const handleDelete = async () => {
-    // Se pide confirmación antes de una acción destructiva.
-    if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor? Esta acción no se puede deshacer.")) {
-      setIsSubmitting(true);
-      setError(null);
-      const docRef = doc(db, "proveedores", proveedorId);
+    if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
       try {
-        // Se elimina el documento de Firestore.
-        await deleteDoc(docRef);
-        // Se redirige al usuario a la lista de proveedores.
-        navigate("/ver-proveedores");
+        await deleteDoc(doc(db, "proveedores", proveedorId));
+        navigate('/ver-proveedores');
       } catch (err) {
-        console.error("Error al eliminar el proveedor: ", err);
         setError("No se pudo eliminar el proveedor.");
-        setIsSubmitting(false);
       }
     }
   };
 
-  if (cargando) return <p>Cargando detalle del proveedor...</p>;
+  const generarPDF = async () => {
+    const input = detalleRef.current;
+    if (!input) return;
+
+    try {
+        const response = await fetch('https://i.imgur.com/5mavo8r.png');
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+
+        const canvas = await html2canvas(input, { scale: 3 });
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdf = new jsPDF('p', 'pt', 'letter');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        
+        const imageWidth = 350;
+        const imageHeight = 88;
+        const x = (pdfWidth - imageWidth) / 2;
+        pdf.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+
+        const contentWidth = pdfWidth - 80;
+        const contentHeight = (canvas.height * contentWidth) / canvas.width;
+        const contentY = 40 + imageHeight + 30;
+        pdf.addImage(imgData, 'PNG', 40, contentY, contentWidth, contentHeight);
+
+        pdf.save(`Detalle_Proveedor_${proveedor?.idProveedor}.pdf`);
+        URL.revokeObjectURL(imageUrl);
+
+    } catch (error) {
+        console.error("Error al generar PDF: ", error);
+        alert("No se pudo generar el PDF.");
+    }
+  };
+
+  if (cargando) return <p>Cargando...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div>
       <h2>Detalle del Proveedor</h2>
-
-      {/* Si no se está editando, se muestran los datos. */}
+      
       {!isEditing ? (
-        <div>
-          {proveedor && (
-            <div>
-              <p><strong>ID de Proveedor:</strong> {proveedor.idProveedor}</p>
-              <p><strong>Nombre(s):</strong> {proveedor.nombre}</p>
-              <p><strong>Apellido Paterno:</strong> {proveedor.apellidoPaterno}</p>
-              <p><strong>Apellido Materno:</strong> {proveedor.apellidoMaterno || 'No especificado'}</p>
-              <p><strong>Fecha de Registro:</strong> {new Date(proveedor.fechaRegistro.seconds * 1000).toLocaleString()}</p>
-            </div>
-          )}
-          <button onClick={() => setIsEditing(true)} disabled={isSubmitting}>✏️ Editar</button>
-          <button onClick={handleDelete} disabled={isSubmitting} style={{ marginLeft: '10px', backgroundColor: '#dc3545' }}>🗑️ Eliminar</button>
-        </div>
+        <>
+          <div ref={detalleRef} style={{ padding: '20px', background: 'white', width: '600px' }}>
+            <h3 style={{ color: '#2A4B7C', textAlign: 'center' }}>Información del Proveedor</h3>
+            {proveedor && (
+              <div style={{ fontSize: '12pt', color: 'black' }}>
+                <p><strong>ID Proveedor:</strong> {proveedor.idProveedor}</p>
+                <p><strong>Nombre(s):</strong> {proveedor.nombre}</p>
+                <p><strong>Apellido Paterno:</strong> {proveedor.apellidoPaterno}</p>
+                <p><strong>Apellido Materno:</strong> {proveedor.apellidoMaterno || 'N/A'}</p>
+                <p><strong>Fecha de Registro:</strong> {proveedor.fechaRegistro.toDate().toLocaleDateString()}</p>
+              </div>
+            )}
+          </div>
+          <div style={{ marginTop: '20px' }}>
+            <button onClick={() => setIsEditing(true)}>✏️ Editar</button>
+            <button onClick={handleDelete} style={{ marginLeft: '10px' }}>🗑️ Eliminar</button>
+            <button onClick={generarPDF} style={{ marginLeft: '10px' }}>📄 Imprimir Detalles</button>
+          </div>
+        </>
       ) : (
-        // Si se está editando, se muestra un formulario.
         <form onSubmit={handleUpdate}>
           <div>
-            <label>ID de Proveedor:</label>
-            {/* El ID de proveedor no debería ser editable usualmente, por lo que se muestra como texto. */}
-            <p>{formData.idProveedor}</p>
-          </div>
-          <div>
             <label>Nombre(s):</label>
-            <input type="text" name="nombre" value={formData.nombre} onChange={handleInputChange} required />
+            <input type="text" name="nombre" value={formData.nombre || ''} onChange={handleChange} required />
           </div>
           <div>
             <label>Apellido Paterno:</label>
-            <input type="text" name="apellidoPaterno" value={formData.apellidoPaterno} onChange={handleInputChange} required />
+            <input type="text" name="apellidoPaterno" value={formData.apellidoPaterno || ''} onChange={handleChange} required />
           </div>
           <div>
             <label>Apellido Materno:</label>
-            <input type="text" name="apellidoMaterno" value={formData.apellidoMaterno || ''} onChange={handleInputChange} />
+            <input type="text" name="apellidoMaterno" value={formData.apellidoMaterno || ''} onChange={handleChange} />
           </div>
-          <button type="submit" disabled={isSubmitting}>✅ Guardar Cambios</button>
-          <button type="button" onClick={() => setIsEditing(false)} disabled={isSubmitting} style={{ marginLeft: '10px' }}>❌ Cancelar</button>
+          <button type="submit">✅ Guardar Cambios</button>
+          <button type="button" onClick={() => setIsEditing(false)} style={{ marginLeft: '10px' }}>❌ Cancelar</button>
         </form>
       )}
-
-      <br />
       <br />
       <Link to="/ver-proveedores">Volver a la lista</Link>
     </div>

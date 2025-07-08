@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 function DetalleFactura() {
   const { facturaId } = useParams();
   const navigate = useNavigate();
+  const detalleRef = useRef();
 
   const [factura, setFactura] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -46,7 +49,6 @@ function DetalleFactura() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
-  // --- SE AÑADEN LAS FUNCIONES Y CONSTANTES PARA EL MONTO ---
   const MIN_MONTO = 1;
   const MAX_MONTO = 5000000;
 
@@ -54,7 +56,6 @@ function DetalleFactura() {
     const montoActual = parseFloat(formData.monto) || 0;
     let nuevoMonto = montoActual + ajuste;
     nuevoMonto = Math.max(MIN_MONTO, Math.min(nuevoMonto, MAX_MONTO));
-    // Se actualiza el campo 'monto' dentro del estado 'formData'
     setFormData(prev => ({ ...prev, monto: String(nuevoMonto) }));
   };
 
@@ -71,7 +72,6 @@ function DetalleFactura() {
         setFormData(prev => ({ ...prev, monto: valor }));
     }
   };
-  // --- FIN DE LAS NUEVAS FUNCIONES ---
 
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -101,30 +101,82 @@ function DetalleFactura() {
     }
   };
 
+  const generarPDF = async () => {
+    const input = detalleRef.current;
+    if (!input) return;
+
+    try {
+        const response = await fetch('https://i.imgur.com/5mavo8r.png');
+        const imageBlob = await response.blob();
+        const imageUrl = URL.createObjectURL(imageBlob);
+
+        const canvas = await html2canvas(input, { scale: 3 });
+        const imgData = canvas.toDataURL('image/png');
+
+        const pdf = new jsPDF('p', 'pt', 'letter');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        
+        const imageWidth = 350;
+        const imageHeight = 88;
+        const x = (pdfWidth - imageWidth) / 2;
+        pdf.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+
+        const contentWidth = pdfWidth - 80;
+        const contentHeight = (canvas.height * contentWidth) / canvas.width;
+        const contentY = 40 + imageHeight + 30;
+        pdf.addImage(imgData, 'PNG', 40, contentY, contentWidth, contentHeight);
+
+        pdf.save(`Detalle_Factura_${factura?.numeroFactura}.pdf`);
+        URL.revokeObjectURL(imageUrl);
+
+    } catch (error) {
+        console.error("Error al generar PDF: ", error);
+        alert("No se pudo generar el PDF.");
+    }
+  };
+
   if (cargando) return <p>Cargando...</p>;
   if (error) return <p style={{ color: 'red' }}>{error}</p>;
 
   return (
     <div>
       <h2>Detalle de Factura</h2>
+      
       {!isEditing ? (
-        // MODO VISTA
-        <div>
-          {factura && (
-            <div>
-              <p><strong>Proveedor:</strong> {factura.nombreProveedor}</p>
-              <p><strong>Número de Factura:</strong> {factura.numeroFactura}</p>
-              <p><strong>Fecha:</strong> {factura.fechaFactura.toDate().toLocaleDateString()}</p>
-              <p><strong>Descripción:</strong> {factura.descripcion || 'N/A'}</p>
-              <p><strong>Monto:</strong> {factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</p>
-              <p><strong>Estatus:</strong> {factura.estatus}</p>
-            </div>
-          )}
-          <button onClick={() => setIsEditing(true)}>✏️ Editar</button>
-          <button onClick={handleDelete} style={{ marginLeft: '10px' }}>🗑️ Eliminar</button>
-        </div>
+        <>
+          <div ref={detalleRef} style={{ padding: '20px', background: 'white', width: '600px' }}>
+            <h3 style={{ color: '#2A4B7C', textAlign: 'center' }}>Detalles de la Factura</h3>
+            {factura && (
+              <div style={{ fontSize: '12pt', color: 'black' }}>
+                <p><strong>Proveedor:</strong> {factura.nombreProveedor}</p>
+                <p><strong>Número de Factura:</strong> {factura.numeroFactura}</p>
+                <p><strong>Fecha:</strong> {factura.fechaFactura.toDate().toLocaleDateString()}</p>
+                <p><strong>Descripción:</strong> {factura.descripcion || 'N/A'}</p>
+                <p><strong>Monto:</strong> {factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</p>
+                <p><strong>Estatus:</strong> 
+                  <span style={{ 
+                    backgroundColor: {
+                      'Pendiente': '#FFC7CE', 'Recibida': '#FFF2CC', 'Con solventación': '#f8cbad', 
+                      'En contabilidad': '#DDEBF7', 'Pagada': '#C6EFCE'
+                    }[factura.estatus],
+                    color: '#3b3b3b',
+                    padding: '3px 8px',
+                    borderRadius: '5px',
+                    marginLeft: '10px'
+                  }}>
+                    {factura.estatus}
+                  </span>
+                </p>
+              </div>
+            )}
+          </div>
+          <div style={{ marginTop: '20px' }}>
+            <button onClick={() => setIsEditing(true)}>✏️ Editar</button>
+            <button onClick={handleDelete} style={{ marginLeft: '10px' }}>🗑️ Eliminar</button>
+            <button onClick={generarPDF} style={{ marginLeft: '10px' }}>📄 Imprimir Detalles</button>
+          </div>
+        </>
       ) : (
-        // MODO EDICIÓN
         <form onSubmit={handleUpdate}>
           <p><strong>Proveedor:</strong> {formData.nombreProveedor}</p>
           <div>
@@ -139,8 +191,6 @@ function DetalleFactura() {
             <label>Descripción:</label>
             <textarea name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea>
           </div>
-
-          {/* --- SECCIÓN DEL MONTO ACTUALIZADA --- */}
           <div>
             <label>Monto:</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -172,8 +222,6 @@ function DetalleFactura() {
                 <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
             </div>
           </div>
-          {/* --- FIN DE LA SECCIÓN DEL MONTO --- */}
-
           <div>
             <label>Estatus:</label>
             <select name="estatus" value={formData.estatus} onChange={handleChange} required>
