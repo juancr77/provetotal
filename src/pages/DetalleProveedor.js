@@ -46,7 +46,9 @@ function DetalleProveedor() {
     try {
       const docRef = doc(db, "proveedores", proveedorId);
       await updateDoc(docRef, formData);
-      setProveedor(formData);
+      // Se actualiza la vista local para reflejar los cambios inmediatamente
+      const updatedProveedor = { ...proveedor, ...formData, fechaRegistro: { toDate: () => new Date(proveedor.fechaRegistro.seconds * 1000) } };
+      setProveedor(updatedProveedor);
       setIsEditing(false);
     } catch (err) {
       setError("Error al actualizar los datos del proveedor.");
@@ -98,7 +100,10 @@ function DetalleProveedor() {
       body: tableData,
       theme: 'grid',
       styles: { fontSize: 10, cellPadding: 8, valign: 'middle' },
-      columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 248, 255] } }
+      columnStyles: {
+        0: { fontStyle: 'bold', fillColor: [240, 248, 255], cellWidth: 120 }, // Ancho fijo para la primera columna
+        1: { cellWidth: 'auto' } // Ancho automático para la segunda
+      }
     });
     docPDF.save(`Detalle_Proveedor_${proveedor.idProveedor}.pdf`);
   };
