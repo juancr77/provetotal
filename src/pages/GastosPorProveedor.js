@@ -94,23 +94,26 @@ function GastosPorProveedor() {
         });
       }
       
+      const columnCount = headerRow.cellCount;
+
       worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
         if (rowNumber > contentStartRow + 1) {
-          if (rowNumber % 2 === 0) {
-            row.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF2F2F2' }
-            };
-          }
-          row.eachCell((cell) => {
+          for (let i = 1; i <= columnCount; i++) {
+            const cell = row.getCell(i);
             cell.border = {
               top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
               left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
               bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
               right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
             };
-          });
+            if (rowNumber % 2 === 0) {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF2F2F2' }
+              };
+            }
+          }
         }
       });
       
