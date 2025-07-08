@@ -51,28 +51,29 @@ function VerFacturas() {
       });
       
       const contentStartRow = 6;
-      worksheet.mergeCells(`A${contentStartRow}:F${contentStartRow}`); // Se expande a 6 columnas
+      worksheet.mergeCells(`A${contentStartRow}:G${contentStartRow}`); // Se expande a 7 columnas
       const titleCell = worksheet.getCell(`A${contentStartRow}`);
       titleCell.value = "Listado de Facturas";
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
       worksheet.getRow(contentStartRow).height = 30;
 
-      // --- Encabezados ---
+      // --- Encabezados (con la nueva columna) ---
       const headerRow = worksheet.getRow(contentStartRow + 1);
       headerRow.height = 25;
-      headerRow.values = ['Fecha', 'Número de Factura', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
+      headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
       headerRow.eachCell((cell) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
-      // --- Datos y Formato Condicional ---
+      // --- Datos (con la nueva columna) ---
       facturas.forEach(factura => {
         const row = worksheet.addRow([
           factura.fechaFactura.toDate(),
           factura.numeroFactura,
+          factura.idProveedor, // Dato de la nueva columna
           factura.nombreProveedor,
           factura.descripcion || '',
           factura.monto,
@@ -80,13 +81,9 @@ function VerFacturas() {
         ]);
       });
 
-      // Se definen los colores para cada estatus
       const statusColors = {
-        'Pendiente': 'FFFFC7CE', // Rojo claro
-        'Recibida': 'FFFFFF00',   // Amarillo
-        'Con solventación': 'FFFFC0CB', // Rosa pastel
-        'En contabilidad': 'FFADD8E6', // Azul celeste
-        'Pagada': 'FFC6EFCE'    // Verde claro
+        'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB',
+        'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE'
       };
 
       const columnCount = headerRow.cellCount;
@@ -94,20 +91,15 @@ function VerFacturas() {
         if (rowNumber > contentStartRow + 1) {
           for (let i = 1; i <= columnCount; i++) {
             const cell = row.getCell(i);
-            // Bordes para todas las celdas
             cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
+              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
             };
-            // Se aplica color de fondo a filas pares, excepto a la de estatus
-            if (rowNumber % 2 === 0 && i !== 6) {
+            if (rowNumber % 2 === 0 && i !== 7) { // Se actualiza la columna de estatus a la 7
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }};
             }
           }
-          // Se aplica el color condicional a la celda de Estatus (columna 6)
-          const statusCell = row.getCell(6);
+          const statusCell = row.getCell(7); // Se actualiza la columna de estatus a la 7
           const statusColor = statusColors[statusCell.value];
           if (statusColor) {
             statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }};
@@ -115,9 +107,8 @@ function VerFacturas() {
         }
       });
       
-      // --- Formato Final y Descarga ---
       worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-      worksheet.getColumn(5).numFmt = '$#,##0.00';
+      worksheet.getColumn(6).numFmt = '$#,##0.00'; // Se actualiza la columna de monto a la 6
       worksheet.columns.forEach(column => { column.width = 25; });
       
       const buffer = await workbook.xlsx.writeBuffer();
@@ -132,7 +123,6 @@ function VerFacturas() {
   if (cargando) {
     return <p>Cargando facturas...</p>;
   }
-
   if (error) {
     return <p style={{ color: 'red' }}>{error}</p>;
   }
@@ -148,6 +138,7 @@ function VerFacturas() {
           <tr>
             <th>Fecha</th>
             <th>Número de Factura</th>
+            <th>ID Proveedor</th>
             <th>Proveedor</th>
             <th>Descripción</th>
             <th>Monto</th>
@@ -158,13 +149,14 @@ function VerFacturas() {
         <tbody>
           {facturas.length === 0 ? (
             <tr>
-              <td colSpan="7">No hay facturas registradas.</td>
+              <td colSpan="8">No hay facturas registradas.</td>
             </tr>
           ) : (
             facturas.map(factura => (
               <tr key={factura.id}>
                 <td>{factura.fechaFactura.toDate().toLocaleDateString()}</td>
                 <td>{factura.numeroFactura}</td>
+                <td>{factura.idProveedor}</td>
                 <td>{factura.nombreProveedor}</td>
                 <td>{factura.descripcion || 'N/A'}</td>
                 <td>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
