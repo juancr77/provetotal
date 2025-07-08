@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
-
+import './css/RegistroFactura.css';
 // Función para obtener la fecha actual en formato yyyy-MM-dd.
 const getTodayDateString = () => {
   const today = new Date();
@@ -161,19 +161,11 @@ function RegistroFactura() {
         </div>
         <div>
           <label>Monto:</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+          <div className="monto-controls">
             <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
             <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
             <div style={{ position: 'relative' }}>
-              <span style={{
-                position: 'absolute',
-                left: '8px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                color: '#333',
-                pointerEvents: 'none'
-              }}>
-                $
+             <span className="monto-symbol">
               </span>
               <input
                 type="number"
@@ -184,6 +176,10 @@ function RegistroFactura() {
                 required
                 style={{ textAlign: 'center', paddingLeft: '20px' }}
               />
+// Para los mensajes de error/éxito:
+{error && <p className="mensaje mensaje-error">{error}</p>}
+{mensajeExito && <p className="mensaje mensaje-exito">{mensajeExito}</p>}
+
             </div>
             <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
             <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>

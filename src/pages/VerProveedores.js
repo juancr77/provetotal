@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs } from "firebase/firestore";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import './css/VerProveedores.css';
 
 function VerProveedores() {
   const [proveedores, setProveedores] = useState([]);
@@ -82,8 +83,10 @@ function VerProveedores() {
           for (let i = 1; i <= columnCount; i++) {
             const cell = row.getCell(i);
             cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
+              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
+              left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
+              right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
             };
             if (rowNumber % 2 === 0) {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
@@ -105,47 +108,54 @@ function VerProveedores() {
     }
   };
 
-  if (cargando) return <p>Cargando proveedores...</p>;
-  if (error) return <p style={{ color: 'red' }}>{error}</p>;
+  if (cargando) return <p className="loading-message">Cargando proveedores...</p>;
+  if (error) return <p className="error-message">{error}</p>;
 
   return (
-    <div>
+    <div className="proveedores-container">
       <h2>Lista de Proveedores Registrados</h2>
-      <button onClick={generateExcel} disabled={proveedores.length === 0} style={{marginBottom: '10px'}}>
+      <button 
+        onClick={generateExcel} 
+        disabled={proveedores.length === 0} 
+        className="excel-button"
+      >
         Generar Excel
       </button>
-      <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>ID de Proveedor</th>
-            <th>Nombre(s)</th>
-            <th>Apellido Paterno</th>
-            <th>Apellido Materno</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {proveedores.length === 0 ? (
+      
+      <div className="table-wrapper">
+        <table className="proveedores-table">
+          <thead>
             <tr>
-              <td colSpan="5">No hay proveedores registrados.</td>
+              <th>ID de Proveedor</th>
+              <th>Nombre(s)</th>
+              <th>Apellido Paterno</th>
+              <th>Apellido Materno</th>
+              <th>Acciones</th>
             </tr>
-          ) : (
-            proveedores.map(proveedor => (
-              <tr key={proveedor.id}>
-                <td>{proveedor.idProveedor}</td>
-                <td>{proveedor.nombre}</td>
-                <td>{proveedor.apellidoPaterno}</td>
-                <td>{proveedor.apellidoMaterno || 'No especificado'}</td>
-                <td>
-                  <Link to={`/proveedor/${proveedor.id}`}>
-                    <button>Ver Detalle</button>
-                  </Link>
-                </td>
+          </thead>
+          <tbody>
+            {proveedores.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="empty-message">No hay proveedores registrados.</td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              proveedores.map(proveedor => (
+                <tr key={proveedor.id}>
+                  <td>{proveedor.idProveedor}</td>
+                  <td>{proveedor.nombre}</td>
+                  <td>{proveedor.apellidoPaterno}</td>
+                  <td>{proveedor.apellidoMaterno || 'No especificado'}</td>
+                  <td>
+                    <Link to={`/proveedor/${proveedor.id}`}>
+                      <button className="detail-button">Ver Detalle</button>
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

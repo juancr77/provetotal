@@ -4,6 +4,7 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Link } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import './css/VerFacturas.css';
 
 function VerFacturas() {
   const [facturas, setFacturas] = useState([]);
@@ -51,14 +52,14 @@ function VerFacturas() {
       });
       
       const contentStartRow = 6;
-      worksheet.mergeCells(`A${contentStartRow}:G${contentStartRow}`); // Se expande a 7 columnas
+      worksheet.mergeCells(`A${contentStartRow}:G${contentStartRow}`);
       const titleCell = worksheet.getCell(`A${contentStartRow}`);
       titleCell.value = "Listado de Facturas";
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
       worksheet.getRow(contentStartRow).height = 30;
 
-      // --- Encabezados (con la nueva columna) ---
+      // --- Encabezados ---
       const headerRow = worksheet.getRow(contentStartRow + 1);
       headerRow.height = 25;
       headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
@@ -68,12 +69,12 @@ function VerFacturas() {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
-      // --- Datos (con la nueva columna) ---
+      // --- Datos ---
       facturas.forEach(factura => {
         const row = worksheet.addRow([
           factura.fechaFactura.toDate(),
           factura.numeroFactura,
-          factura.idProveedor, // Dato de la nueva columna
+          factura.idProveedor,
           factura.nombreProveedor,
           factura.descripcion || '',
           factura.monto,
@@ -92,14 +93,16 @@ function VerFacturas() {
           for (let i = 1; i <= columnCount; i++) {
             const cell = row.getCell(i);
             cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
+              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
+              left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
+              right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
             };
-            if (rowNumber % 2 === 0 && i !== 7) { // Se actualiza la columna de estatus a la 7
+            if (rowNumber % 2 === 0 && i !== 7) {
               cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }};
             }
           }
-          const statusCell = row.getCell(7); // Se actualiza la columna de estatus a la 7
+          const statusCell = row.getCell(7);
           const statusColor = statusColors[statusCell.value];
           if (statusColor) {
             statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }};
@@ -108,7 +111,7 @@ function VerFacturas() {
       });
       
       worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-      worksheet.getColumn(6).numFmt = '$#,##0.00'; // Se actualiza la columna de monto a la 6
+      worksheet.getColumn(6).numFmt = '$#,##0.00';
       worksheet.columns.forEach(column => { column.width = 25; });
       
       const buffer = await workbook.xlsx.writeBuffer();
@@ -121,56 +124,63 @@ function VerFacturas() {
   };
 
   if (cargando) {
-    return <p>Cargando facturas...</p>;
+    return <p className="loading-message">Cargando facturas...</p>;
   }
   if (error) {
-    return <p style={{ color: 'red' }}>{error}</p>;
+    return <p className="error-message">{error}</p>;
   }
 
   return (
-    <div>
+    <div className="facturas-container">
       <h2>Lista de Facturas Registradas</h2>
-      <button onClick={generateExcel} disabled={facturas.length === 0} style={{marginBottom: '10px'}}>
+      <button 
+        onClick={generateExcel} 
+        disabled={facturas.length === 0} 
+        className="excel-button"
+      >
         Generar Excel
       </button>
-      <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Número de Factura</th>
-            <th>ID Proveedor</th>
-            <th>Proveedor</th>
-            <th>Descripción</th>
-            <th>Monto</th>
-            <th>Estatus</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          {facturas.length === 0 ? (
+      
+      <div className="table-container">
+        <table>
+          <thead>
             <tr>
-              <td colSpan="8">No hay facturas registradas.</td>
+              <th>Fecha</th>
+              <th>Número de Factura</th>
+              <th>ID Proveedor</th>
+              <th>Proveedor</th>
+              <th>Descripción</th>
+              <th>Monto</th>
+              <th>Estatus</th>
+              <th>Acciones</th>
             </tr>
-          ) : (
-            facturas.map(factura => (
-              <tr key={factura.id}>
-                <td>{factura.fechaFactura.toDate().toLocaleDateString()}</td>
-                <td>{factura.numeroFactura}</td>
-                <td>{factura.idProveedor}</td>
-                <td>{factura.nombreProveedor}</td>
-                <td>{factura.descripcion || 'N/A'}</td>
-                <td>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
-                <td>{factura.estatus}</td>
-                <td>
-                  <Link to={`/factura/${factura.id}`}>
-                    <button>Ver Detalle</button>
-                  </Link>
-                </td>
+          </thead>
+          <tbody>
+            {facturas.length === 0 ? (
+              <tr>
+                <td colSpan="8" className="empty-message">No hay facturas registradas.</td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              facturas.map(factura => (
+                <tr key={factura.id}>
+                  <td>{factura.fechaFactura.toDate().toLocaleDateString()}</td>
+                  <td>{factura.numeroFactura}</td>
+                  <td>{factura.idProveedor}</td>
+                  <td>{factura.nombreProveedor}</td>
+                  <td>{factura.descripcion || 'N/A'}</td>
+                  <td>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
+                  <td data-status={factura.estatus}>{factura.estatus}</td>
+                  <td>
+                    <Link to={`/factura/${factura.id}`}>
+                      <button className="detail-button">Ver Detalle</button>
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

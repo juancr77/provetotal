@@ -1,38 +1,105 @@
-.App {
-  text-align: center;
+/* src/pages/css/App.css */
+
+:root {
+  --pastel-blue: #a7c7e7;
+  --pastel-green: #b9e3c6;
+  --pastel-pink: #f7c7d4;
+  --pastel-yellow: #fff3b0;
+  --pastel-purple: #d6c8ff;
+  --background: #fdfdfd;
+  --text-color: #444;
+  --nav-bg: #e8f0fe;
+  --nav-link: #5d5d5d;
+  --nav-link-hover: #2d2d2d;
+  --highlight: #aed9e0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--background);
+  color: var(--text-color);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+nav {
+  background-color: var(--nav-bg);
+  padding: 1rem 2rem;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.App-link {
-  color: #61dafb;
+nav h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--pastel-purple);
+  margin-right: 2rem;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+nav a {
+  text-decoration: none;
+  color: var(--nav-link);
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+nav a:hover {
+  background-color: var(--highlight);
+  color: var(--nav-link-hover);
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 0;
+}
+
+h2 {
+  text-align: center;
+  color: var(--pastel-blue);
+  margin-top: 2rem;
+}
+
+.page-container {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Puedes usar estas clases en tus páginas */
+.button {
+  background-color: var(--pastel-green);
+  border: none;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.button:hover {
+  background-color: var(--pastel-blue);
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  display: block;
+  color: #555;
 }

@@ -1,0 +1,75 @@
+/* src/pages/css/VerFacturas.css */
+
+/* Contenedor principal */
+.facturas-container {
+  padding: 2rem;
+  width: 100%;
+  background-color: var(--blanco);
+}
+
+h2 {
+  color: var(--texto-mas-oscuro);
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Tabla */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 100%;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--gris-medio);
+}
+
+th {
+  background-color: var(--pastel-lila);
+  color: var(--texto-mas-oscuro);
+  font-weight: 600;
+}
+
+/* Botones */
+.excel-button {
+  background-color: var(--pastel-verde);
+  color: var(--texto-mas-oscuro);
+  margin-bottom: 1.5rem;
+}
+
+.detail-button {
+  background-color: var(--pastel-mint);
+  color: var(--texto-mas-oscuro);
+}
+
+/* Estatus */
+[data-status="Pendiente"] {
+  background-color: var(--pastel-rosa);
+}
+[data-status="Recibida"] {
+  background-color: var(--pastel-amarillo);
+}
+[data-status="Con solventación"] {
+  background-color: #ffd6ff;
+}
+[data-status="En contabilidad"] {
+  background-color: var(--pastel-azul);
+}
+[data-status="Pagada"] {
+  background-color: var(--pastel-verde);
+}
+
+/* Mensajes */
+.empty-message {
+  text-align: center;
+  padding: 2rem;
+  color: var(--texto-oscuro);
+}

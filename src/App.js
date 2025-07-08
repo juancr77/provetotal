@@ -10,6 +10,7 @@ import GastosPorProveedor from './pages/GastosPorProveedor';
 import GastosPorMes from './pages/GastosPorMes';
 import VerFacturas from './pages/VerFacturas';
 import DetalleFactura from './pages/DetalleFactura';
+import './pages/css/App.css';
 
 function App() {
   return (

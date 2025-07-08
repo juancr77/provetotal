@@ -1,0 +1,105 @@
+/* src/pages/css/RegistroFactura.css */
+
+/* Contenedor principal */
+.registro-factura-container {
+  padding: 2rem;
+  width: 100%;
+  background-color: var(--blanco);
+}
+
+h2 {
+  color: var(--texto-mas-oscuro);
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Formulario */
+.registro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+label {
+  font-weight: 500;
+  color: var(--texto-mas-oscuro);
+  font-size: 1rem;
+}
+
+select, input, textarea {
+  padding: 0.75rem;
+  border: 1px solid var(--pastel-lila);
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background-color: var(--gris-claro);
+  width: 100%;
+}
+
+/* Controles de monto */
+.monto-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.monto-input-container {
+  position: relative;
+  flex-grow: 1;
+}
+
+.monto-input-container span {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--texto-oscuro);
+  pointer-events: none;
+  font-weight: 500;
+}
+
+/* Botones */
+button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: auto;
+}
+
+.submit-button {
+  background-color: var(--pastel-lila);
+  color: var(--texto-mas-oscuro);
+  align-self: flex-start;
+}
+
+/* Mensajes */
+.mensaje {
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  width: 100%;
+}
+
+.mensaje-error {
+  background-color: #fff5f5;
+  color: #e53e3e;
+}
+
+.mensaje-exito {
+  background-color: #f0fff4;
+  color: #38a169;
+}

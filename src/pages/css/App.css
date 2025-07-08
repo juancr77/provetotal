@@ -1,0 +1,84 @@
+/* src/pages/css/App.css */
+
+:root {
+  /* Paleta de colores pasteles */
+  --pastel-azul: #c1e7ff;
+  --pastel-verde: #d8f3dc;
+  --pastel-lila: #e0c1ff;
+  --pastel-amarillo: #fff2cc;
+  --pastel-mint: #b5ead7;
+  --pastel-coral: #ffb7b2;
+  --pastel-rosa: #ffd6e0;
+  --blanco: #ffffff;
+  --gris-claro: #f8f9fa;
+  --gris-medio: #e9ecef;
+  --texto-oscuro: #495057;
+  --texto-mas-oscuro: #212529;
+  --sombra: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos generales */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--gris-claro);
+  color: var(--texto-oscuro);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Barra de navegación */
+nav {
+  background-color: var(--pastel-azul);
+  padding: 1rem;
+  box-shadow: var(--sombra);
+  width: 100%;
+}
+
+nav h1 {
+  color: var(--texto-mas-oscuro);
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+nav a {
+  color: var(--texto-oscuro);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  margin: 0.2rem;
+  display: inline-block;
+}
+
+nav a:hover {
+  background-color: var(--pastel-mint);
+  color: var(--texto-mas-oscuro);
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  background-color: var(--gris-medio);
+  margin: 0;
+  width: 100%;
+}
+
+/* Contenido principal */
+main {
+  padding: 1rem;
+  width: 100%;
+}
+
+/* Estilos responsivos para navegación */
+@media (max-width: 768px) {
+  nav a {
+    display: block;
+    width: 100%;
+    margin: 0.2rem 0;
+    padding: 0.8rem;
+  }
+}

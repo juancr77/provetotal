@@ -1,0 +1,160 @@
+/* src/pages/css/VerProveedores.css */
+
+/* Contenedor principal */
+.proveedores-container {
+  padding: 2rem;
+  width: 100%;
+  background-color: #ffffff;
+}
+
+.proveedores-container h2 {
+  color: #5e548e;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+/* Botón de Excel */
+.excel-button {
+  background-color: #9f7aea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 1.5rem;
+}
+
+.excel-button:hover {
+  background-color: #805ad5;
+}
+
+.excel-button:disabled {
+  background-color: #d8bbff;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Contenedor de tabla */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos de tabla */
+.proveedores-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 100%;
+}
+
+.proveedores-table th, 
+.proveedores-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.proveedores-table th {
+  background-color: #d8bbff;
+  color: #5e548e;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+.proveedores-table tr:hover {
+  background-color: #f9f5ff;
+}
+
+/* Botón de detalle */
+.detail-button {
+  background-color: #b5ead7;
+  color: #2a4b7c;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detail-button:hover {
+  background-color: #9fdfc7;
+  transform: translateY(-1px);
+}
+
+/* Mensajes de estado */
+.loading-message, 
+.error-message, 
+.empty-message {
+  padding: 2rem;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+.loading-message {
+  color: #5e548e;
+}
+
+.error-message {
+  color: #e53e3e;
+  background-color: #fff5f5;
+  border-radius: 8px;
+}
+
+.empty-message {
+  color: #718096;
+  text-align: center;
+}
+
+/* Estilos responsivos */
+@media (max-width: 1024px) {
+  .proveedores-container {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .proveedores-container {
+    padding: 1rem;
+  }
+
+  .proveedores-container h2 {
+    font-size: 1.5rem;
+  }
+
+  .proveedores-table th, 
+  .proveedores-table td {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .excel-button {
+    width: 100%;
+    padding: 0.75rem;
+  }
+
+  .proveedores-container h2 {
+    font-size: 1.3rem;
+  }
+
+  .proveedores-table th, 
+  .proveedores-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .detail-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
