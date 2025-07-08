@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 function DetalleProveedor() {
   const { proveedorId } = useParams();
   const navigate = useNavigate();
-  const detalleRef = useRef();
 
   const [proveedor, setProveedor] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -21,10 +20,10 @@ function DetalleProveedor() {
       try {
         const docRef = doc(db, "proveedores", proveedorId);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
-          setProveedor(docSnap.data());
-          setFormData(docSnap.data());
+          const data = docSnap.data();
+          setProveedor(data);
+          setFormData(data);
         } else {
           setError("No se encontró el proveedor.");
         }
@@ -66,37 +65,42 @@ function DetalleProveedor() {
   };
 
   const generarPDF = async () => {
-    const input = detalleRef.current;
-    if (!input) return;
+    if (!proveedor) return;
+    const docPDF = new jsPDF('p', 'pt', 'letter');
+    const pdfWidth = docPDF.internal.pageSize.getWidth();
 
     try {
-        const response = await fetch('https://i.imgur.com/5mavo8r.png');
-        const imageBlob = await response.blob();
-        const imageUrl = URL.createObjectURL(imageBlob);
+      const response = await fetch('https://i.imgur.com/5mavo8r.png');
+      const imageBlob = await response.blob();
+      const imageUrl = URL.createObjectURL(imageBlob);
+      const imageWidth = 350;
+      const imageHeight = 88;
+      const x = (pdfWidth - imageWidth) / 2;
+      docPDF.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+      URL.revokeObjectURL(imageUrl);
+    } catch (error) { console.error("Error al cargar la imagen de cabecera:", error); }
 
-        const canvas = await html2canvas(input, { scale: 3 });
-        const imgData = canvas.toDataURL('image/png');
+    const contentY = 40 + 88 + 40;
+    docPDF.setFontSize(18);
+    docPDF.setTextColor('#2A4B7C');
+    docPDF.text("Información del Proveedor", pdfWidth / 2, contentY, { align: 'center' });
 
-        const pdf = new jsPDF('p', 'pt', 'letter');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        
-        const imageWidth = 350;
-        const imageHeight = 88;
-        const x = (pdfWidth - imageWidth) / 2;
-        pdf.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+    const tableData = [
+      ['ID Proveedor', proveedor.idProveedor],
+      ['Nombre(s)', proveedor.nombre],
+      ['Apellido Paterno', proveedor.apellidoPaterno],
+      ['Apellido Materno', proveedor.apellidoMaterno || 'N/A'],
+      ['Fecha de Registro', proveedor.fechaRegistro.toDate().toLocaleDateString()]
+    ];
 
-        const contentWidth = pdfWidth - 80;
-        const contentHeight = (canvas.height * contentWidth) / canvas.width;
-        const contentY = 40 + imageHeight + 30;
-        pdf.addImage(imgData, 'PNG', 40, contentY, contentWidth, contentHeight);
-
-        pdf.save(`Detalle_Proveedor_${proveedor?.idProveedor}.pdf`);
-        URL.revokeObjectURL(imageUrl);
-
-    } catch (error) {
-        console.error("Error al generar PDF: ", error);
-        alert("No se pudo generar el PDF.");
-    }
+    autoTable(docPDF, {
+      startY: contentY + 20,
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 8, valign: 'middle' },
+      columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 248, 255] } }
+    });
+    docPDF.save(`Detalle_Proveedor_${proveedor.idProveedor}.pdf`);
   };
 
   if (cargando) return <p>Cargando...</p>;
@@ -105,10 +109,9 @@ function DetalleProveedor() {
   return (
     <div>
       <h2>Detalle del Proveedor</h2>
-      
       {!isEditing ? (
         <>
-          <div ref={detalleRef} style={{ padding: '20px', background: 'white', width: '600px' }}>
+          <div style={{ padding: '20px', background: 'white', width: '600px' }}>
             <h3 style={{ color: '#2A4B7C', textAlign: 'center' }}>Información del Proveedor</h3>
             {proveedor && (
               <div style={{ fontSize: '12pt', color: 'black' }}>

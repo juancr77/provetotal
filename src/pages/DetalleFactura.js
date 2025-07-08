@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
 
 function DetalleFactura() {
   const { facturaId } = useParams();
   const navigate = useNavigate();
-  const detalleRef = useRef();
 
   const [factura, setFactura] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -23,7 +22,6 @@ function DetalleFactura() {
       try {
         const docRef = doc(db, "facturas", facturaId);
         const docSnap = await getDoc(docRef);
-
         if (docSnap.exists()) {
           const data = docSnap.data();
           setFactura(data);
@@ -77,13 +75,10 @@ function DetalleFactura() {
     e.preventDefault();
     try {
       const docRef = doc(db, "facturas", facturaId);
-      const dataToUpdate = {
-        ...formData,
-        monto: parseFloat(formData.monto),
-        fechaFactura: new Date(formData.fechaFactura)
-      };
+      const dataToUpdate = { ...formData, monto: parseFloat(formData.monto), fechaFactura: new Date(formData.fechaFactura) };
       await updateDoc(docRef, dataToUpdate);
-      setFactura(dataToUpdate);
+      const updatedFactura = { ...dataToUpdate, fechaFactura: { toDate: () => new Date(dataToUpdate.fechaFactura) } };
+      setFactura(updatedFactura);
       setIsEditing(false);
     } catch (err) {
       setError("Error al actualizar la factura.");
@@ -102,37 +97,60 @@ function DetalleFactura() {
   };
 
   const generarPDF = async () => {
-    const input = detalleRef.current;
-    if (!input) return;
+    if (!factura) return;
+    const docPDF = new jsPDF('p', 'pt', 'letter');
+    const pdfWidth = docPDF.internal.pageSize.getWidth();
 
     try {
-        const response = await fetch('https://i.imgur.com/5mavo8r.png');
-        const imageBlob = await response.blob();
-        const imageUrl = URL.createObjectURL(imageBlob);
+      const response = await fetch('https://i.imgur.com/5mavo8r.png');
+      const imageBlob = await response.blob();
+      const imageUrl = URL.createObjectURL(imageBlob);
+      const imageWidth = 350;
+      const imageHeight = 88;
+      const x = (pdfWidth - imageWidth) / 2;
+      docPDF.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+      URL.revokeObjectURL(imageUrl);
+    } catch (error) { console.error("Error al cargar la imagen de cabecera:", error); }
 
-        const canvas = await html2canvas(input, { scale: 3 });
-        const imgData = canvas.toDataURL('image/png');
+    const contentY = 40 + 88 + 40;
+    docPDF.setFontSize(18);
+    docPDF.setTextColor('#2A4B7C');
+    docPDF.text("Detalles de la Factura", pdfWidth / 2, contentY, { align: 'center' });
 
-        const pdf = new jsPDF('p', 'pt', 'letter');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        
-        const imageWidth = 350;
-        const imageHeight = 88;
-        const x = (pdfWidth - imageWidth) / 2;
-        pdf.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
+    const tableData = [
+      ['Proveedor', factura.nombreProveedor],
+      ['Número de Factura', factura.numeroFactura],
+      ['Fecha', factura.fechaFactura.toDate().toLocaleDateString()],
+      ['Descripción', factura.descripcion || 'N/A'],
+      ['Monto', factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })],
+      ['Estatus', factura.estatus]
+    ];
+    
+    const statusColors = {
+      'Pendiente': [255, 199, 206], 'Recibida': [255, 242, 204], 'Con solventación': [252, 221, 173],
+      'En contabilidad': [221, 235, 247], 'Pagada': [198, 239, 206]
+    };
 
-        const contentWidth = pdfWidth - 80;
-        const contentHeight = (canvas.height * contentWidth) / canvas.width;
-        const contentY = 40 + imageHeight + 30;
-        pdf.addImage(imgData, 'PNG', 40, contentY, contentWidth, contentHeight);
-
-        pdf.save(`Detalle_Factura_${factura?.numeroFactura}.pdf`);
-        URL.revokeObjectURL(imageUrl);
-
-    } catch (error) {
-        console.error("Error al generar PDF: ", error);
-        alert("No se pudo generar el PDF.");
-    }
+    autoTable(docPDF, {
+      startY: contentY + 20,
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 10, cellPadding: 8, valign: 'middle' },
+      columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 248, 255] } },
+      didDrawCell: (data) => {
+        if (data.section === 'body' && data.column.index === 1 && data.row.index === 5) {
+          const status = String(data.cell.raw);
+          const color = statusColors[status];
+          if (color) {
+            docPDF.setFillColor(...color);
+            docPDF.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+            docPDF.setTextColor(50, 50, 50);
+            docPDF.text(status, data.cell.x + data.cell.padding('left'), data.cell.y + data.cell.height / 2, { baseline: 'middle' });
+          }
+        }
+      }
+    });
+    docPDF.save(`Detalle_Factura_${factura.numeroFactura}.pdf`);
   };
 
   if (cargando) return <p>Cargando...</p>;
@@ -141,10 +159,9 @@ function DetalleFactura() {
   return (
     <div>
       <h2>Detalle de Factura</h2>
-      
       {!isEditing ? (
         <>
-          <div ref={detalleRef} style={{ padding: '20px', background: 'white', width: '600px' }}>
+          <div style={{ padding: '20px', background: 'white', width: '600px' }}>
             <h3 style={{ color: '#2A4B7C', textAlign: 'center' }}>Detalles de la Factura</h3>
             {factura && (
               <div style={{ fontSize: '12pt', color: 'black' }}>
@@ -152,7 +169,7 @@ function DetalleFactura() {
                 <p><strong>Número de Factura:</strong> {factura.numeroFactura}</p>
                 <p><strong>Fecha:</strong> {factura.fechaFactura.toDate().toLocaleDateString()}</p>
                 <p><strong>Descripción:</strong> {factura.descripcion || 'N/A'}</p>
-                <p><strong>Monto:</strong> {factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</p>
+                <p><strong>Monto:</strong> {typeof factura.monto === 'number' ? factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }) : ''}</p>
                 <p><strong>Estatus:</strong> 
                   <span style={{ 
                     backgroundColor: {
@@ -197,26 +214,8 @@ function DetalleFactura() {
                 <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
                 <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
                 <div style={{ position: 'relative' }}>
-                <span style={{
-                    position: 'absolute',
-                    left: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#333',
-                    pointerEvents: 'none'
-                }}>
-                    $
-                </span>
-                <input
-                    type="number"
-                    name="monto"
-                    value={formData.monto}
-                    onChange={handleMontoChange}
-                    min={MIN_MONTO}
-                    max={MAX_MONTO}
-                    required
-                    style={{ textAlign: 'center', paddingLeft: '20px' }}
-                />
+                <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', color: '#333', pointerEvents: 'none' }}>$</span>
+                <input type="number" name="monto" value={formData.monto} onChange={handleMontoChange} min={MIN_MONTO} max={MAX_MONTO} required style={{ textAlign: 'center', paddingLeft: '20px' }}/>
                 </div>
                 <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
                 <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
