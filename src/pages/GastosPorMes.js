@@ -44,16 +44,16 @@ function GastosPorMes() {
   const generateExcel = async (reportType) => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet(reportType);
+      const worksheet = workbook.addWorksheet(reportType, {
+        views: [{ state: 'frozen', ySplit: 7 }]
+      });
 
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBuffer = await response.arrayBuffer();
-      
       const imageId = workbook.addImage({
         buffer: imageBuffer,
         extension: 'png',
       });
-
       worksheet.addImage(imageId, {
         tl: { col: 0, row: 0 },
         ext: { width: 350, height: 88 }
@@ -65,27 +65,64 @@ function GastosPorMes() {
       const titleCell = worksheet.getCell(`A${contentStartRow}`);
       titleCell.value = `Totales por ${reportType}`;
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      titleCell.font = { bold: true, size: 16 };
+      titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
       worksheet.getRow(contentStartRow).height = 30;
 
       const headerRow = worksheet.getRow(contentStartRow + 1);
-      headerRow.font = { bold: true };
-
+      headerRow.height = 25;
+      
       if (reportType === 'Mes') {
         headerRow.values = ['Mes', 'Año', 'Nº de Facturas', 'Monto Total'];
+      } else { 
+        headerRow.values = ['ID Proveedor', 'Nombre', 'Nº de Facturas', 'Monto Total'];
+      }
+
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF2A4B7C' }
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: 'FFFFFFFF' }
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      });
+      
+      if (reportType === 'Mes') {
         gastos.forEach(gasto => {
           worksheet.addRow([
             nombresMeses[gasto.mes], gasto.anio, gasto.conteo, gasto.total
           ]);
         });
       } else { 
-        headerRow.values = ['ID Proveedor', 'Nombre', 'Nº de Facturas', 'Monto Total'];
         gastos.forEach(gasto => {
           worksheet.addRow([
             gasto.idProveedor, gasto.nombre, gasto.conteo, gasto.total
           ]);
         });
       }
+
+      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+        if (rowNumber > contentStartRow + 1) {
+          if (rowNumber % 2 === 0) {
+            row.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF2F2F2' }
+            };
+          }
+          row.eachCell((cell) => {
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+              right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
+            };
+          });
+        }
+      });
       
       worksheet.getColumn(4).numFmt = '$#,##0.00';
       worksheet.columns.forEach(column => { column.width = 25; });
