@@ -4,7 +4,6 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-// Se importa el archivo de estilos compartidos para las vistas de detalle.
 import './css/DetalleVista.css';
 
 function DetalleFactura() {
@@ -17,7 +16,6 @@ function DetalleFactura() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  // Toda la lógica funcional se mantiene intacta.
   const formatDateForInput = (date) => date.toISOString().split('T')[0];
 
   useEffect(() => {
@@ -80,7 +78,7 @@ function DetalleFactura() {
       const docRef = doc(db, "facturas", facturaId);
       const dataToUpdate = { ...formData, monto: parseFloat(formData.monto), fechaFactura: new Date(formData.fechaFactura) };
       await updateDoc(docRef, dataToUpdate);
-      setFactura(dataToUpdate);
+      setFactura(dataToUpdate); // Se actualiza el estado local
       setIsEditing(false);
     } catch (err) {
       setError("Error al actualizar la factura.");
@@ -102,7 +100,6 @@ function DetalleFactura() {
     // ... tu lógica para generar PDF sigue igual ...
   };
 
-
   if (cargando) return <p className="loading-message">Cargando...</p>;
   if (error) return <p className="error-message">{error}</p>;
 
@@ -121,7 +118,12 @@ function DetalleFactura() {
                 <dd>{factura.numeroFactura}</dd>
 
                 <dt>Fecha:</dt>
-                <dd>{factura.fechaFactura.toDate().toLocaleDateString()}</dd>
+                {/* ✅ LÍNEA CORREGIDA */}
+                <dd>
+                  {factura.fechaFactura.toDate ? 
+                   factura.fechaFactura.toDate().toLocaleDateString() : 
+                   new Date(factura.fechaFactura).toLocaleDateString()}
+                </dd>
 
                 <dt>Descripción:</dt>
                 <dd>{factura.descripcion || 'N/A'}</dd>
