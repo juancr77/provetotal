@@ -1,17 +1,18 @@
-/* --- Paleta de Colores y Variables --- */
+/* --- Paleta de Colores y Variables para Tablas --- */
 :root {
-  --table-bg: #ffffff;
-  --table-header-bg: #f2f6ff; /* Un azul pastel muy claro */
-  --table-header-text: #34495e; /* Texto del encabezado oscuro y legible */
-  --table-border-color: #e0e7f1;
+  --color-surface: #ffffff;
+  --color-primary: #7795f8;
+  --color-primary-dark: #5d7fe3;
+  --color-text-primary: #343a40;
+  --color-text-secondary: #6c757d;
+  --color-success: #28a745;
+  --color-success-dark: #218838;
+  --color-border: #e0e7f1;
+  --table-header-bg: #f2f6ff;
   --row-hover-bg: #f8f9fa;
-  --link-color: #7795f8; /* El mismo azul pastel de los otros componentes */
-  --link-hover-color: #5d7fe3;
-  --button-excel-bg: #28a745; /* Verde para el botón de Excel */
-  --button-excel-hover: #218838;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  /* Colores de Estatus */
+  /* Colores de Estatus (para la tabla de facturas) */
   --status-pendiente: #ffe3e3;
   --status-recibida: #fffbe3;
   --status-solventacion: #ffebf1;
@@ -19,21 +20,21 @@
   --status-pagada: #e6ffed;
 }
 
-/* --- Contenedor Principal --- */
-.facturas-container {
-  background-color: var(--table-bg);
+/* --- Contenedor Principal de la Vista --- */
+.vista-container { /* Renombrado para ser genérico */
+  background-color: var(--color-surface);
   padding: 2rem 2.5rem;
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-soft);
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
 }
 
-.facturas-container h2 {
+.vista-container h2 {
   text-align: center;
-  color: var(--table-header-text);
+  color: var(--color-text-primary);
   margin-bottom: 1.5rem;
   font-size: 1.8rem;
   font-weight: 600;
@@ -45,7 +46,7 @@
   margin-left: auto;
   margin-bottom: 1.5rem;
   padding: 0.75rem 1.5rem;
-  background-color: var(--button-excel-bg);
+  background-color: var(--color-success);
   color: white;
   border: none;
   border-radius: 8px;
@@ -55,8 +56,8 @@
   transition: background-color 0.2s, transform 0.2s;
 }
 
-.excel-button:hover {
-  background-color: var(--button-excel-hover);
+.excel-button:hover:not(:disabled) {
+  background-color: var(--color-success-dark);
   transform: translateY(-2px);
 }
 
@@ -66,54 +67,52 @@
   transform: none;
 }
 
-/* --- Contenedor de la Tabla (para responsividad) --- */
-.table-container {
+/* --- Wrapper de la Tabla para Scroll --- */
+.table-container, .table-wrapper {
   width: 100%;
-  overflow-x: auto; /* Permite el scroll horizontal en pantallas pequeñas */
+  overflow-x: auto;
 }
 
-/* --- Estilo de la Tabla --- */
+/* --- Estilo General de la Tabla --- */
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px; /* Ancho mínimo para evitar que el contenido se comprima demasiado */
+  min-width: 800px;
 }
 
 th, td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid var(--table-border-color);
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
-/* --- Encabezado de la Tabla --- */
 thead {
   background-color: var(--table-header-bg);
 }
 
 th {
-  color: var(--table-header-text);
+  color: var(--color-text-primary);
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
-/* --- Cuerpo de la Tabla --- */
 tbody tr:hover {
   background-color: var(--row-hover-bg);
 }
 
 td {
-  color: #555;
+  color: var(--color-text-secondary);
 }
 
-/* --- Celda de Estatus con colores --- */
+/* --- Celda de Estatus con Colores --- */
 td[data-status] {
   font-weight: 600;
   padding: 0.5rem 1rem;
   border-radius: 15px;
   text-align: center;
+  background-color: var(--color-border); /* Color por defecto */
 }
 
 td[data-status="Pendiente"] { background-color: var(--status-pendiente); }
@@ -122,10 +121,10 @@ td[data-status="Con solventación"] { background-color: var(--status-solventacio
 td[data-status="En contabilidad"] { background-color: var(--status-contabilidad); }
 td[data-status="Pagada"] { background-color: var(--status-pagada); }
 
-/* --- Botón de Detalle --- */
+/* --- Botón de Acción en Tabla --- */
 .detail-button {
   padding: 0.5rem 1rem;
-  background-color: var(--link-color);
+  background-color: var(--color-primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -135,32 +134,23 @@ td[data-status="Pagada"] { background-color: var(--status-pagada); }
 }
 
 .detail-button:hover {
-  background-color: var(--link-hover-color);
+  background-color: var(--color-primary-dark);
 }
 
-/* --- Mensajes de Carga, Error y Vacío --- */
+/* --- Mensajes de Estado --- */
 .loading-message, .error-message, .empty-message {
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
   color: #777;
 }
-
 .error-message {
   color: #d94848;
 }
 
-/* --- Media Queries para Pantallas Pequeñas --- */
+/* --- Responsividad --- */
 @media (max-width: 767px) {
-  .facturas-container {
-    padding: 1rem;
-  }
-  
-  .facturas-container h2 {
-    font-size: 1.5rem;
-  }
-  
-  th, td {
-    padding: 0.75rem;
+  .vista-container {
+    padding: 1.5rem 1rem;
   }
 }

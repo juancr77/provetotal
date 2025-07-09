@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs } from "firebase/firestore";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import './css/VerProveedores.css';
+import './css/vistasTablas.css';
 
 function VerProveedores() {
   const [proveedores, setProveedores] = useState([]);

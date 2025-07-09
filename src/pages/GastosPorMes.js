@@ -3,6 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs } from "firebase/firestore";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import './css/vistasTablas.css'; // Correctamente importado
 
 function GastosPorMes() {
   const [gastos, setGastos] = useState([]);

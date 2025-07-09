@@ -1,160 +1,155 @@
-/* src/pages/css/VerProveedores.css */
+/* --- Paleta de Colores y Variables (Consistente con el resto de la app) --- */
+:root {
+  --container-bg: #ffffff;
+  --header-bg: #f2f6ff; /* Azul pastel muy claro */
+  --header-text: #34495e;
+  --border-color: #e0e7f1;
+  --row-hover-bg: #f8f9fa;
+  --row-even-bg: #fdfdff; /* Fondo casi blanco para filas pares */
+  --primary-action-color: #7795f8;
+  --primary-action-hover: #5d7fe3;
+  --excel-button-bg: #28a745;
+  --excel-button-hover: #218838;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
 
-/* Contenedor principal */
+/* --- Contenedor Principal de la Página --- */
 .proveedores-container {
-  padding: 2rem;
+  background-color: var(--container-bg);
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
   width: 100%;
-  background-color: #ffffff;
+  max-width: 1200px;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .proveedores-container h2 {
-  color: #5e548e;
+  text-align: center;
+  color: var(--header-text);
   margin-bottom: 1.5rem;
   font-size: 1.8rem;
   font-weight: 600;
 }
 
-/* Botón de Excel */
+/* --- Botón de Generar Excel --- */
 .excel-button {
-  background-color: #9f7aea;
+  display: block;
+  margin-left: auto;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--excel-button-bg);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
   border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  margin-bottom: 1.5rem;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
-.excel-button:hover {
-  background-color: #805ad5;
+.excel-button:hover:not(:disabled) {
+  background-color: var(--excel-button-hover);
+  transform: translateY(-2px);
 }
 
 .excel-button:disabled {
-  background-color: #d8bbff;
+  background-color: #ccc;
   cursor: not-allowed;
-  opacity: 0.7;
 }
 
-/* Contenedor de tabla */
+/* --- Wrapper de la Tabla para Scroll Responsivo --- */
 .table-wrapper {
   width: 100%;
-  overflow-x: auto;
-  margin-top: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  overflow-x: auto; /* Habilita el scroll horizontal en pantallas pequeñas */
 }
 
-/* Estilos de tabla */
+/* --- Estilos de la Tabla --- */
 .proveedores-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 100%;
+  min-width: 700px; /* Ancho mínimo para que la tabla no se comprima demasiado */
 }
 
 .proveedores-table th, 
 .proveedores-table td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+/* --- Encabezado de la Tabla --- */
+.proveedores-table thead {
+  background-color: var(--header-bg);
 }
 
 .proveedores-table th {
-  background-color: #d8bbff;
-  color: #5e548e;
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-}
-
-.proveedores-table tr:hover {
-  background-color: #f9f5ff;
-}
-
-/* Botón de detalle */
-.detail-button {
-  background-color: #b5ead7;
-  color: #2a4b7c;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
+  color: var(--header-text);
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* --- Cuerpo de la Tabla (con Zebra-Striping) --- */
+.proveedores-table tbody tr:nth-child(even) {
+  background-color: var(--row-even-bg);
+}
+
+.proveedores-table tbody tr:hover {
+  background-color: var(--row-hover-bg);
+}
+
+.proveedores-table td {
+  color: #555;
+}
+
+/* --- Botón de Acción "Ver Detalle" --- */
+.detail-button {
+  padding: 0.5rem 1rem;
+  background-color: var(--primary-action-color);
+  color: white;
+  border: none;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  font-weight: 500;
+  white-space: nowrap; /* Evita que el texto del botón se parta */
+  transition: background-color 0.2s;
 }
 
 .detail-button:hover {
-  background-color: #9fdfc7;
-  transform: translateY(-1px);
+  background-color: var(--primary-action-hover);
 }
 
-/* Mensajes de estado */
+/* --- Mensajes de Estado --- */
 .loading-message, 
 .error-message, 
 .empty-message {
-  padding: 2rem;
-  font-size: 1.1rem;
-  width: 100%;
-}
-
-.loading-message {
-  color: #5e548e;
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #777;
 }
 
 .error-message {
-  color: #e53e3e;
-  background-color: #fff5f5;
-  border-radius: 8px;
+  color: #d94848;
+  font-weight: 500;
 }
 
-.empty-message {
-  color: #718096;
-  text-align: center;
-}
-
-/* Estilos responsivos */
-@media (max-width: 1024px) {
-  .proveedores-container {
-    padding: 1.5rem;
-  }
-}
-
-@media (max-width: 768px) {
+/* --- Media Queries para Móviles --- */
+@media (max-width: 767px) {
   .proveedores-container {
     padding: 1rem;
   }
-
+  
   .proveedores-container h2 {
     font-size: 1.5rem;
   }
-
+  
   .proveedores-table th, 
   .proveedores-table td {
     padding: 0.75rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .excel-button {
-    width: 100%;
-    padding: 0.75rem;
-  }
-
-  .proveedores-container h2 {
-    font-size: 1.3rem;
-  }
-
-  .proveedores-table th, 
-  .proveedores-table td {
-    padding: 0.5rem;
-    font-size: 0.9rem;
-  }
-
-  .detail-button {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.8rem;
   }
 }

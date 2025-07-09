@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
-import './css/RegistroFactura.css';
-// Función para obtener la fecha actual en formato yyyy-MM-dd.
+import './css/Formulario.css';
+
 const getTodayDateString = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0'); // Enero es 0
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
   const dd = String(today.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 };
 
 function RegistroFactura() {
-  // Estados para la lista de proveedores
   const [proveedores, setProveedores] = useState([]);
-  
-  // Estados para los campos del formulario
   const [idProveedor, setIdProveedor] = useState('');
   const [nombreProveedor, setNombreProveedor] = useState('');
   const [numeroFactura, setNumeroFactura] = useState('');
@@ -23,13 +20,10 @@ function RegistroFactura() {
   const [monto, setMonto] = useState('');
   const [estatus, setEstatus] = useState('');
   const [fechaFactura, setFechaFactura] = useState(getTodayDateString());
-
-  // Estados para la retroalimentación al usuario
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
 
-  // Se obtienen los proveedores cuando el componente se monta.
   useEffect(() => {
     const fetchProveedores = async () => {
       try {
@@ -37,7 +31,7 @@ function RegistroFactura() {
         const lista = querySnapshot.docs.map(doc => {
           const data = doc.data();
           const nombreCompleto = `${data.nombre} ${data.apellidoPaterno} ${data.apellidoMaterno || ''}`.trim();
-          return { ...data, nombreCompleto };
+          return { ...data, nombreCompleto, id: doc.id };
         });
         setProveedores(lista);
       } catch (err) {
@@ -50,7 +44,6 @@ function RegistroFactura() {
     fetchProveedores();
   }, []);
 
-  // Función para sincronizar la selección de ID y Nombre del proveedor.
   const handleProviderSelection = (selectedId) => {
     setIdProveedor(selectedId);
     if (selectedId) {
@@ -63,7 +56,6 @@ function RegistroFactura() {
     }
   };
 
-  // Constantes y funciones para el campo de Monto
   const MIN_MONTO = 1;
   const MAX_MONTO = 5000000;
 
@@ -71,24 +63,25 @@ function RegistroFactura() {
     const montoActual = parseFloat(monto) || 0;
     let nuevoMonto = montoActual + ajuste;
     nuevoMonto = Math.max(MIN_MONTO, Math.min(nuevoMonto, MAX_MONTO));
-    setMonto(String(nuevoMonto));
+    setMonto(nuevoMonto.toString());
   };
 
   const handleMontoChange = (e) => {
     const valor = e.target.value;
     if (valor === '') {
-        setMonto('');
-        return;
+      setMonto('');
+      return;
     }
     const numero = parseFloat(valor);
-    if (numero > MAX_MONTO) {
-        setMonto(String(MAX_MONTO));
-    } else {
+    if (!isNaN(numero)) {
+      if (numero > MAX_MONTO) {
+        setMonto(MAX_MONTO.toString());
+      } else {
         setMonto(valor);
+      }
     }
   };
 
-  // Función para manejar el envío del formulario.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -113,8 +106,6 @@ function RegistroFactura() {
     try {
       await addDoc(collection(db, "facturas"), nuevaFactura);
       setMensajeExito("Factura registrada con éxito.");
-
-      // Se limpian todos los campos del formulario.
       setIdProveedor('');
       setNombreProveedor('');
       setNumeroFactura('');
@@ -129,69 +120,83 @@ function RegistroFactura() {
   };
 
   return (
-    <div>
+    <div className="registro-factura-container">
       <h2>Registrar Nueva Factura</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>ID del Proveedor:</label>
-          <select value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
+      <form onSubmit={handleSubmit} className="registro-form">
+        <div className="form-group">
+          <label htmlFor="idProveedor">ID del Proveedor:</label>
+          <select
+            id="idProveedor"
+            value={idProveedor}
+            onChange={(e) => handleProviderSelection(e.target.value)}
+            required
+          >
             <option value="">-- Seleccione por ID --</option>
-            {cargando ? (<option disabled>Cargando...</option>) : (proveedores.map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.idProveedor}</option>)))}
+            {cargando ? (
+              <option disabled>Cargando...</option>
+            ) : (
+              proveedores.map(p => (
+                <option key={p.idProveedor} value={p.idProveedor}>
+                  {p.idProveedor}
+                </option>
+              ))
+            )}
           </select>
         </div>
-        <div>
-          <label>Nombre del Proveedor:</label>
-          <select value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
-            <option value="">-- Seleccione por Nombre --</option>
-            {cargando ? (<option disabled>Cargando...</option>) : ([...proveedores].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto)).map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.nombreCompleto}</option>)))}
-          </select>
-        </div>
-        <div>
-          <label>Número de Factura:</label>
-          <input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} required />
-        </div>
-        <div>
-          <label>Descripción (Opcional):</label>
-          <textarea
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            rows="3"
-            style={{width: '95%'}}
-          ></textarea>
-        </div>
-        <div>
-          <label>Monto:</label>
-          <div className="monto-controls">
-            <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
-            <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
-            <div style={{ position: 'relative' }}>
-             <span className="monto-symbol">
-              </span>
-              <input
-                type="number"
-                value={monto}
-                onChange={handleMontoChange}
-                min={MIN_MONTO}
-                max={MAX_MONTO}
-                required
-                style={{ textAlign: 'center', paddingLeft: '20px' }}
-              />
-// Para los mensajes de error/éxito:
-{error && <p className="mensaje mensaje-error">{error}</p>}
-{mensajeExito && <p className="mensaje mensaje-exito">{mensajeExito}</p>}
 
-            </div>
-            <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
-            <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
-          </div>
+        <div className="form-group">
+          <label htmlFor="nombreProveedor">Nombre del Proveedor:</label>
+          <select
+            id="nombreProveedor"
+            value={idProveedor}
+            onChange={(e) => handleProviderSelection(e.target.value)}
+            required
+          >
+            <option value="">-- Seleccione por Nombre --</option>
+            {cargando ? (
+              <option disabled>Cargando...</option>
+            ) : (
+              [...proveedores]
+                .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto))
+                .map(p => (
+                  <option key={p.idProveedor} value={p.idProveedor}>
+                    {p.nombreCompleto}
+                  </option>
+                ))
+            )}
+          </select>
         </div>
-        <div>
-          <label>Fecha de la Factura:</label>
-          <input type="date" value={fechaFactura} onChange={(e) => setFechaFactura(e.target.value)} required />
+
+        <div className="form-group">
+          <label htmlFor="numeroFactura">Número de Factura:</label>
+          <input
+            id="numeroFactura"
+            type="text"
+            value={numeroFactura}
+            onChange={(e) => setNumeroFactura(e.target.value)}
+            required
+          />
         </div>
-        <div>
-          <label>Estatus:</label>
-          <select value={estatus} onChange={(e) => setEstatus(e.target.value)} required>
+
+        <div className="form-group">
+          <label htmlFor="fechaFactura">Fecha de la Factura:</label>
+          <input
+            id="fechaFactura"
+            type="date"
+            value={fechaFactura}
+            onChange={(e) => setFechaFactura(e.target.value)}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="estatus">Estatus:</label>
+          <select
+            id="estatus"
+            value={estatus}
+            onChange={(e) => setEstatus(e.target.value)}
+            required
+          >
             <option value="">-- Seleccione un estatus --</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Recibida">Recibida</option>
@@ -200,11 +205,49 @@ function RegistroFactura() {
             <option value="Pagada">Pagada</option>
           </select>
         </div>
-        <button type="submit" style={{ marginTop: '20px' }}>Registrar Factura</button>
+
+        <div className="monto-group">
+          <label htmlFor="monto">Monto:</label>
+          <div className="monto-controls">
+            <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+            <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+            <div className="monto-input-container">
+              <span>$</span>
+              <input
+                id="monto"
+                type="number"
+                value={monto}
+                onChange={handleMontoChange}
+                min={MIN_MONTO}
+                max={MAX_MONTO}
+                step="0.01"
+                required
+              />
+            </div>
+            <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+            <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+          </div>
+        </div>
+
+        <div className="form-group full-width">
+          <label htmlFor="descripcion">Descripción (Opcional):</label>
+          <textarea
+            id="descripcion"
+            value={descripcion}
+            onChange={(e) => setDescripcion(e.target.value)}
+            rows="3"
+          />
+        </div>
+
+        <div className="submit-button-container">
+          <button type="submit" className="submit-button">
+            Registrar Factura
+          </button>
+        </div>
+
+        {error && <p className="mensaje mensaje-error">{error}</p>}
+        {mensajeExito && <p className="mensaje mensaje-exito">{mensajeExito}</p>}
       </form>
-      
-      {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-      {mensajeExito && <p style={{ color: 'green', marginTop: '10px' }}>{mensajeExito}</p>}
     </div>
   );
 }

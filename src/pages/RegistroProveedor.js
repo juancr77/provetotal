@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { db } from '../firebase';
 // Se importan las funciones de Firestore para agregar un nuevo documento.
 import { collection, addDoc } from "firebase/firestore";
+import './css/Formulario.css';
 
 function RegistroProveedor() {
   // Se utiliza el hook useState para manejar el estado de cada campo del formulario.

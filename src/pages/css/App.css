@@ -1,84 +1,105 @@
-/* src/pages/css/App.css */
-
+/* --- Paleta de Colores y Variables Globales --- */
 :root {
-  /* Paleta de colores pasteles */
-  --pastel-azul: #c1e7ff;
-  --pastel-verde: #d8f3dc;
-  --pastel-lila: #e0c1ff;
-  --pastel-amarillo: #fff2cc;
-  --pastel-mint: #b5ead7;
-  --pastel-coral: #ffb7b2;
-  --pastel-rosa: #ffd6e0;
-  --blanco: #ffffff;
-  --gris-claro: #f8f9fa;
-  --gris-medio: #e9ecef;
-  --texto-oscuro: #495057;
-  --texto-mas-oscuro: #212529;
-  --sombra: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --color-background: #f8f9fa;
+  --color-surface: #ffffff;
+  --color-primary: #7795f8;
+  --color-primary-dark: #6786e2;
+  --color-text-primary: #343a40;
+  --color-text-secondary: #6c757d;
+  --color-border: #dee2e6;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-/* Estilos generales */
+/* --- Estilos Globales --- */
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   margin: 0;
-  padding: 0;
-  background-color: var(--gris-claro);
-  color: var(--texto-oscuro);
-  line-height: 1.6;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--color-background);
+}
+
+/* --- Contenedor Principal --- */
+.app-container {
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
 }
 
-/* Barra de navegación */
-nav {
-  background-color: var(--pastel-azul);
-  padding: 1rem;
-  box-shadow: var(--sombra);
-  width: 100%;
+/* --- Barra de Navegación --- */
+.app-nav {
+  background-color: var(--color-surface);
+  padding: 1rem 2rem;
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--color-border);
 }
 
-nav h1 {
-  color: var(--texto-mas-oscuro);
+.app-nav h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+/* --- Contenedor y Estilos de Enlaces --- */
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.nav-links .link-separator {
+  color: var(--color-border);
+  user-select: none;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: color 0.2s ease-in-out;
+}
+
+.nav-links a:hover {
+  color: var(--color-primary);
+}
+
+/* Estilo para el enlace activo con NavLink */
+.nav-links a.active {
+  color: var(--color-primary);
   font-weight: 700;
 }
 
-nav a {
-  color: var(--texto-oscuro);
-  text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  margin: 0.2rem;
-  display: inline-block;
+/* --- Contenido Principal --- */
+.main-content {
+  flex-grow: 1;
+  padding: 2.5rem;
 }
 
-nav a:hover {
-  background-color: var(--pastel-mint);
-  color: var(--texto-mas-oscuro);
+/* --- Media Queries para Responsividad --- */
+@media (max-width: 992px) {
+  .app-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
 }
 
-hr {
-  border: 0;
-  height: 1px;
-  background-color: var(--gris-medio);
-  margin: 0;
-  width: 100%;
-}
-
-/* Contenido principal */
-main {
-  padding: 1rem;
-  width: 100%;
-}
-
-/* Estilos responsivos para navegación */
-@media (max-width: 768px) {
-  nav a {
-    display: block;
+@media (max-width: 767px) {
+  .nav-links {
+    flex-direction: column;
+    align-items: flex-start;
     width: 100%;
-    margin: 0.2rem 0;
-    padding: 0.8rem;
+    gap: 0.8rem;
+  }
+  .nav-links .link-separator {
+    display: none;
+  }
+  .main-content {
+    padding: 1.5rem;
   }
 }

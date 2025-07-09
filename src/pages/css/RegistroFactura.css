@@ -1,105 +1,216 @@
-/* src/pages/css/RegistroFactura.css */
-
-/* Contenedor principal */
-.registro-factura-container {
-  padding: 2rem;
-  width: 100%;
-  background-color: var(--blanco);
+/* --- Paleta de Colores Pastel --- */
+:root {
+  --background-color: #f8f9fa; /* Un gris muy claro y suave */
+  --container-bg: #ffffff;      /* Blanco para el contenedor principal */
+  --primary-text: #343a40;       /* Texto principal oscuro para legibilidad */
+  --secondary-text: #6c757d;     /* Texto secundario un poco más claro */
+  --border-color: #dee2e6;       /* Bordes sutiles */
+  --input-bg: #fdfdff;           /* Fondo de inputs casi blanco */
+  --input-focus-border: #a3bffa; /* Un azul pastel suave para el foco */
+  --button-bg: #7795f8;          /* Botón principal en un tono azul pastel vibrante */
+  --button-hover-bg: #6786e2;    /* Tono más oscuro para el hover del botón */
+  --button-monto-bg: #e9ecef;    /* Botones de ajuste de monto */
+  --button-monto-hover: #ced4da; /* Hover para botones de ajuste */
+  --success-bg: #e6ffed;         /* Fondo para mensajes de éxito (verde pastel) */
+  --success-text: #2f9e4f;       /* Texto para mensajes de éxito */
+  --error-bg: #ffe3e3;           /* Fondo para mensajes de error (rojo pastel) */
+  --error-text: #d94848;         /* Texto para mensajes de error */
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08); /* Sombra suave para dar profundidad */
 }
 
-h2 {
-  color: var(--texto-mas-oscuro);
-  margin-bottom: 1.5rem;
+/* --- Estilos Generales --- */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--background-color);
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* --- Contenedor Principal --- */
+.registro-factura-container {
+  background-color: var(--container-bg);
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 800px;
+  box-sizing: border-box;
+}
+
+.registro-factura-container h2 {
+  text-align: center;
+  color: var(--primary-text);
+  margin-bottom: 2rem;
   font-size: 1.8rem;
   font-weight: 600;
 }
 
-/* Formulario */
+/* --- Formulario --- */
 .registro-form {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr; /* Una columna por defecto para móviles */
   gap: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
-.form-group {
+/* --- Grupos de Formulario y Etiquetas --- */
+.form-group, .monto-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
-label {
+.form-group label, .monto-group label {
+  margin-bottom: 0.5rem;
+  color: var(--secondary-text);
   font-weight: 500;
-  color: var(--texto-mas-oscuro);
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
-select, input, textarea {
-  padding: 0.75rem;
-  border: 1px solid var(--pastel-lila);
-  border-radius: 8px;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  background-color: var(--gris-claro);
+/* --- Estilos para Inputs, Selects y Textarea --- */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
   width: 100%;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  color: var(--primary-text);
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
-/* Controles de monto */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--input-focus-border);
+  box-shadow: 0 0 0 3px rgba(119, 149, 248, 0.2);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* --- Grupo de Monto Específico --- */
 .monto-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  width: 100%;
 }
 
-.monto-input-container {
+.monto-controls .monto-input-container {
   position: relative;
   flex-grow: 1;
 }
 
 .monto-input-container span {
   position: absolute;
-  left: 12px;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--texto-oscuro);
-  pointer-events: none;
-  font-weight: 500;
+  color: var(--secondary-text);
+  font-size: 1rem;
 }
 
-/* Botones */
-button {
-  padding: 0.75rem 1.5rem;
+.monto-input-container input[type="number"] {
+  padding-left: 2.5rem; /* Espacio para el símbolo de peso */
+}
+
+.monto-controls button {
+  background-color: var(--button-monto-bg);
+  color: var(--primary-text);
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: auto;
+  transition: background-color 0.2s;
+}
+
+.monto-controls button:hover {
+  background-color: var(--button-monto-hover);
+}
+
+/* --- Botón de Envío --- */
+.submit-button-container {
+  grid-column: 1 / -1; /* Ocupa todo el ancho en la grid */
+  text-align: center;
 }
 
 .submit-button {
-  background-color: var(--pastel-lila);
-  color: var(--texto-mas-oscuro);
-  align-self: flex-start;
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #fff;
+  background-color: var(--button-bg);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
 }
 
-/* Mensajes */
+.submit-button:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-2px);
+}
+
+/* --- Mensajes de Error y Éxito --- */
 .mensaje {
+  grid-column: 1 / -1;
   padding: 1rem;
   border-radius: 8px;
+  text-align: center;
   font-weight: 500;
-  width: 100%;
+  margin-top: 0.5rem;
 }
 
 .mensaje-error {
-  background-color: #fff5f5;
-  color: #e53e3e;
+  background-color: var(--error-bg);
+  color: var(--error-text);
 }
 
 .mensaje-exito {
-  background-color: #f0fff4;
-  color: #38a169;
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+/* --- Media Queries para Responsividad --- */
+
+/* Tablets (y pantallas más anchas) */
+@media (min-width: 768px) {
+  .registro-form {
+    grid-template-columns: repeat(2, 1fr); /* Dos columnas */
+    column-gap: 2rem; /* Espacio entre columnas */
+    row-gap: 1.5rem; /* Espacio entre filas */
+  }
+
+  /* Elementos que ocuparán todo el ancho */
+  .monto-group,
+  .form-group.full-width,
+  .submit-button-container,
+  .mensaje {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Pantallas pequeñas (móviles) */
+@media (max-width: 480px) {
+  body {
+    padding: 1rem;
+  }
+
+  .registro-factura-container {
+    padding: 1.5rem;
+  }
+
+  .registro-factura-container h2 {
+    font-size: 1.5rem;
+  }
 }

@@ -4,7 +4,7 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Link } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import './css/VerFacturas.css';
+import './css/vistasTablas.css';
 
 function VerFacturas() {
   const [facturas, setFacturas] = useState([]);
