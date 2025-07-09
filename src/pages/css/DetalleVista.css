@@ -14,12 +14,12 @@
   --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-focus: 0 0 0 3px rgba(119, 149, 248, 0.2);
 
-  /* Colores de Estatus */
-  --status-pendiente: #ffe3e3;
-  --status-recibida: #fffbe3;
-  --status-solventacion: #ffebf1;
-  --status-contabilidad: #e3f2ff;
-  --status-pagada: #e6ffed;
+  /* ✅ Colores de Estatus más fuertes y con el cambio a crema */
+  --status-pendiente: #ffcdd2;     /* Rojo pastel más intenso */
+  --status-recibida: #fff59d;      /* Amarillo pastel más intenso */
+  --status-solventacion: #f8bbd0;  /* Rosa pastel más intenso */
+  --status-contabilidad: #fffde7;  /* Tono crema/marfil */
+  --status-pagada: #c8e6c9;        /* Verde pastel más intenso */
 }
 
 /* --- Contenedor Principal --- */
@@ -65,17 +65,23 @@
 .info-grid dd {
   margin: 0;
   color: var(--color-text-primary);
+  /* ✅ Se aumenta el tamaño de la fuente para los datos */
+  font-size: 1.1rem; 
 }
 
 /* --- Badge de Estatus --- */
+/* --- Badge de Estatus --- */
 .status-badge {
-  padding: 0.25rem 0.75rem;
-  border-radius: 15px;
+  padding: 0.4rem 0.9rem;
+  border-radius: 10px; /* Radio de borde más sutil para un look de recuadro */
+ /* border: 1px solid rgba(0, 0, 0, 0.08);  Borde sutil para definir la caja */
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
   display: inline-block;
+  color: #3b3b3b; /* Color de texto oscuro para mejor contraste */
 }
+
 .status-badge[data-status="Pendiente"] { background-color: var(--status-pendiente); }
 .status-badge[data-status="Recibida"] { background-color: var(--status-recibida); }
 .status-badge[data-status="Con solventación"] { background-color: var(--status-solventacion); }
