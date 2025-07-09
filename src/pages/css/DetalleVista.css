@@ -1,0 +1,211 @@
+/* --- Estilos para las Vistas de Detalle --- */
+:root {
+  --color-surface: #ffffff;
+  --color-primary: #7795f8;
+  --color-primary-light: #a3bffa;
+  --color-primary-dark: #5d7fe3;
+  --color-danger: #e53e3e;
+  --color-danger-dark: #c53030;
+  --color-secondary: #6c757d;
+  --color-secondary-dark: #5a6268;
+  --color-text-primary: #343a40;
+  --color-text-secondary: #6c757d;
+  --color-border: #dee2e6;
+  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(119, 149, 248, 0.2);
+
+  /* Colores de Estatus */
+  --status-pendiente: #ffe3e3;
+  --status-recibida: #fffbe3;
+  --status-solventacion: #ffebf1;
+  --status-contabilidad: #e3f2ff;
+  --status-pagada: #e6ffed;
+}
+
+/* --- Contenedor Principal --- */
+.detalle-container {
+  background-color: var(--color-surface);
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.detalle-container h2 {
+  text-align: center;
+  color: var(--color-text-primary);
+  margin-top: 0;
+  margin-bottom: 2rem;
+  font-size: 1.8rem;
+}
+
+/* --- Vista de Información --- */
+.info-card {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 1.2rem;
+  align-items: center;
+}
+
+.info-grid dt {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.info-grid dd {
+  margin: 0;
+  color: var(--color-text-primary);
+}
+
+/* --- Badge de Estatus --- */
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  display: inline-block;
+}
+.status-badge[data-status="Pendiente"] { background-color: var(--status-pendiente); }
+.status-badge[data-status="Recibida"] { background-color: var(--status-recibida); }
+.status-badge[data-status="Con solventación"] { background-color: var(--status-solventacion); }
+.status-badge[data-status="En contabilidad"] { background-color: var(--status-contabilidad); }
+.status-badge[data-status="Pagada"] { background-color: var(--status-pagada); }
+
+
+/* --- Grupo de Botones de Acción --- */
+.detalle-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* --- Estilos Base de Botones --- */
+.btn {
+  padding: 0.7rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.btn-editar { background-color: var(--color-primary); color: white; }
+.btn-editar:hover { background-color: var(--color-primary-dark); }
+.btn-eliminar { background-color: var(--color-danger); color: white; }
+.btn-eliminar:hover { background-color: var(--color-danger-dark); }
+.btn-secundario { background-color: var(--color-secondary); color: white; }
+.btn-secundario:hover { background-color: var(--color-secondary-dark); }
+
+
+/* --- Formulario de Edición --- */
+.detalle-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.form-group label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+.form-group input, .form-group select, .form-group textarea {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus);
+}
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* --- Controles de Monto --- */
+.monto-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.monto-controls .monto-input-container {
+  position: relative;
+  flex-grow: 1;
+}
+.monto-input-container span {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+}
+.monto-input-container input[type="number"] {
+  padding-left: 2.5rem;
+  text-align: right;
+}
+.monto-controls button {
+  background-color: #e9ecef;
+  color: var(--color-text-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.monto-controls button:hover {
+  background-color: #ced4da;
+}
+
+/* --- Enlace para Volver --- */
+.link-volver {
+  display: inline-block;
+  margin-top: 1.5rem;
+  text-align: center;
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.link-volver:hover {
+  text-decoration: underline;
+}
+
+/* --- Mensajes de Carga y Error --- */
+.loading-message, .error-message {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #777;
+}
+.error-message {
+  color: var(--color-danger);
+  font-weight: 500;
+}
