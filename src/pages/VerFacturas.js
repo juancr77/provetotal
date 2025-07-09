@@ -12,6 +12,7 @@ function VerFacturas() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Se mantiene toda la lógica para obtener las facturas.
     const obtenerFacturas = async () => {
       try {
         const facturasRef = collection(db, "facturas");
@@ -35,6 +36,7 @@ function VerFacturas() {
     obtenerFacturas();
   }, []);
 
+  // Se mantiene toda la lógica para generar el archivo Excel.
   const generateExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
@@ -42,7 +44,6 @@ function VerFacturas() {
         views: [{ state: 'frozen', ySplit: 7 }]
       });
 
-      // --- Imagen y Título ---
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBuffer = await response.arrayBuffer();
       const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
@@ -59,7 +60,6 @@ function VerFacturas() {
       titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
       worksheet.getRow(contentStartRow).height = 30;
 
-      // --- Encabezados ---
       const headerRow = worksheet.getRow(contentStartRow + 1);
       headerRow.height = 25;
       headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
@@ -69,9 +69,8 @@ function VerFacturas() {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
-      // --- Datos ---
       facturas.forEach(factura => {
-        const row = worksheet.addRow([
+        worksheet.addRow([
           factura.fechaFactura.toDate(),
           factura.numeroFactura,
           factura.idProveedor,
@@ -131,7 +130,8 @@ function VerFacturas() {
   }
 
   return (
-    <div className="facturas-container">
+    // ✅ ÚNICO CAMBIO: Se usa la clase unificada para el contenedor con ancho limitado.
+    <div className="vista-container">
       <h2>Lista de Facturas Registradas</h2>
       <button 
         onClick={generateExcel} 

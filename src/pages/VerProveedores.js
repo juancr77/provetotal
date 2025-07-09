@@ -11,6 +11,7 @@ function VerProveedores() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
+  // Se mantiene toda la lógica para obtener los proveedores.
   useEffect(() => {
     const obtenerProveedores = async () => {
       try {
@@ -31,6 +32,7 @@ function VerProveedores() {
     obtenerProveedores();
   }, []);
 
+  // Se mantiene toda la lógica para generar el archivo Excel.
   const generateExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
@@ -38,7 +40,6 @@ function VerProveedores() {
         views: [{ state: 'frozen', ySplit: 7 }]
       });
 
-      // --- Imagen y Título ---
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBuffer = await response.arrayBuffer();
       const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
@@ -55,7 +56,6 @@ function VerProveedores() {
       titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
       worksheet.getRow(contentStartRow).height = 30;
 
-      // --- Encabezados ---
       const headerRow = worksheet.getRow(contentStartRow + 1);
       headerRow.height = 25;
       headerRow.values = ['ID de Proveedor', 'Nombre(s)', 'Apellido Paterno', 'Apellido Materno', 'Fecha de Registro'];
@@ -65,7 +65,6 @@ function VerProveedores() {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
       });
 
-      // --- Datos ---
       proveedores.forEach(p => {
         worksheet.addRow([
           p.idProveedor,
@@ -76,7 +75,6 @@ function VerProveedores() {
         ]);
       });
 
-      // --- Estilos de Filas y Bordes ---
       const columnCount = headerRow.cellCount;
       worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
         if (rowNumber > contentStartRow + 1) {
@@ -95,7 +93,6 @@ function VerProveedores() {
         }
       });
       
-      // --- Formato Final y Descarga ---
       worksheet.getColumn(5).numFmt = 'dd/mm/yyyy';
       worksheet.columns.forEach(column => { column.width = 25; });
       
@@ -112,7 +109,8 @@ function VerProveedores() {
   if (error) return <p className="error-message">{error}</p>;
 
   return (
-    <div className="proveedores-container">
+    // ✅ CAMBIOS: Se usan las clases unificadas para el contenedor y el wrapper de la tabla.
+    <div className="vista-container">
       <h2>Lista de Proveedores Registrados</h2>
       <button 
         onClick={generateExcel} 
@@ -122,7 +120,7 @@ function VerProveedores() {
         Generar Excel
       </button>
       
-      <div className="table-wrapper">
+      <div className="table-container">
         <table className="proveedores-table">
           <thead>
             <tr>
