@@ -21,13 +21,13 @@
 }
 
 /* --- Contenedor Principal de la Vista --- */
-.vista-container { /* Renombrado para ser genérico */
+.vista-container { /* Clase genérica para el contenedor principal */
   background-color: var(--color-surface);
   padding: 2rem 2.5rem;
   border-radius: 12px;
   box-shadow: var(--shadow-soft);
   width: 100%;
-  max-width: 1200px;
+  /* max-width: 1200px;  <-- Se ha eliminado esta línea */
   margin: 0 auto;
   box-sizing: border-box;
 }
@@ -77,7 +77,6 @@
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
 }
 
 th, td {
@@ -119,7 +118,7 @@ td[data-status="Pendiente"] { background-color: var(--status-pendiente); }
 td[data-status="Recibida"] { background-color: var(--status-recibida); }
 td[data-status="Con solventación"] { background-color: var(--status-solventacion); }
 td[data-status="En contabilidad"] { background-color: var(--status-contabilidad); }
-td[data-status="Pagada"] { background-color: var(--status-pagada); }
+td[data-satus="Pagada"] { background-color: var(--status-pagada); }
 
 /* --- Botón de Acción en Tabla --- */
 .detail-button {
@@ -152,5 +151,6 @@ td[data-status="Pagada"] { background-color: var(--status-pagada); }
 @media (max-width: 767px) {
   .vista-container {
     padding: 1.5rem 1rem;
+    border-radius: 0; /* Opcional: elimina el borde redondeado en móviles */
   }
 }
