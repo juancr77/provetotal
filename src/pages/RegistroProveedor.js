@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
@@ -13,9 +13,18 @@ function RegistroProveedor() {
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
 
+  // Se añade un estado de carga que depende de la autenticación
+  const [cargandoAuth, setCargandoAuth] = useState(true);
+
+  useEffect(() => {
+    // Se simula la carga del estado de autenticación
+    if (currentUser !== undefined) {
+      setCargandoAuth(false);
+    }
+  }, [currentUser]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Se verifica si el usuario está autenticado antes de continuar.
     if (!currentUser) {
       return alert("Necesitas autenticarte para registrar un proveedor.");
     }
@@ -37,7 +46,7 @@ function RegistroProveedor() {
     };
 
     try {
-      const docRef = await addDoc(collection(db, "proveedores"), nuevoProveedor);
+      await addDoc(collection(db, "proveedores"), nuevoProveedor);
       setMensajeExito(`Proveedor registrado con éxito.`);
       setIdProveedor('');
       setNombre('');
@@ -49,8 +58,21 @@ function RegistroProveedor() {
     }
   };
 
+  if (cargandoAuth) {
+    return <p className="loading-message">Cargando...</p>;
+  }
+
+  // Si no hay usuario, se muestra el mensaje de autenticación.
+  if (!currentUser) {
+    return (
+      <div className="form-container">
+        <h2>Formulario de Registro de Proveedor</h2>
+        <p className="auth-message">Necesitas autenticarte para registrar un nuevo proveedor.</p>
+      </div>
+    );
+  }
+
   return (
-    // Se aplican las clases de CSS para el contenedor del formulario.
     <div className="registro-factura-container"> 
       <h2>Formulario de Registro de Proveedor</h2>
       <form onSubmit={handleSubmit} className="registro-form">

@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
-import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
+import { useAuth } from '../auth/AuthContext';
 import './css/Formulario.css';
 
 const getTodayDateString = () => {
   const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, '0');
-  const dd = String(today.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
+  return today.toISOString().split('T')[0];
 };
 
 function RegistroFactura() {
-  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
+  const { currentUser } = useAuth();
   const [proveedores, setProveedores] = useState([]);
   const [idProveedor, setIdProveedor] = useState('');
   const [nombreProveedor, setNombreProveedor] = useState('');
@@ -27,7 +24,12 @@ function RegistroFactura() {
   const [mensajeExito, setMensajeExito] = useState('');
 
   useEffect(() => {
+    // La carga de proveedores solo se realiza si el usuario está autenticado
     const fetchProveedores = async () => {
+      if (!currentUser) {
+        setCargando(false);
+        return;
+      }
       try {
         const querySnapshot = await getDocs(collection(db, "proveedores"));
         const lista = querySnapshot.docs.map(doc => {
@@ -44,7 +46,7 @@ function RegistroFactura() {
       }
     };
     fetchProveedores();
-  }, []);
+  }, [currentUser]);
 
   const handleProviderSelection = (selectedId) => {
     setIdProveedor(selectedId);
@@ -86,7 +88,6 @@ function RegistroFactura() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Se añade la verificación de autenticación
     if (!currentUser) {
       return alert("Necesitas autenticarte para registrar una factura.");
     }
@@ -126,84 +127,49 @@ function RegistroFactura() {
     }
   };
 
+  if (cargando) {
+    return <p className="loading-message">Cargando...</p>;
+  }
+
+  // Si no hay usuario, se muestra el mensaje de autenticación.
+  if (!currentUser) {
+    return (
+      <div className="registro-factura-container">
+        <h2>Registrar Nueva Factura</h2>
+        <p className="auth-message">Necesitas autenticarte para registrar una nueva factura.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="registro-factura-container">
       <h2>Registrar Nueva Factura</h2>
       <form onSubmit={handleSubmit} className="registro-form">
         <div className="form-group">
           <label htmlFor="idProveedor">ID del Proveedor:</label>
-          <select
-            id="idProveedor"
-            value={idProveedor}
-            onChange={(e) => handleProviderSelection(e.target.value)}
-            required
-          >
+          <select id="idProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
             <option value="">-- Seleccione por ID --</option>
-            {cargando ? (
-              <option disabled>Cargando...</option>
-            ) : (
-              proveedores.map(p => (
-                <option key={p.idProveedor} value={p.idProveedor}>
-                  {p.idProveedor}
-                </option>
-              ))
-            )}
+            {proveedores.map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.idProveedor}</option>))}
           </select>
         </div>
-
         <div className="form-group">
           <label htmlFor="nombreProveedor">Nombre del Proveedor:</label>
-          <select
-            id="nombreProveedor"
-            value={idProveedor}
-            onChange={(e) => handleProviderSelection(e.target.value)}
-            required
-          >
+          <select id="nombreProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
             <option value="">-- Seleccione por Nombre --</option>
-            {cargando ? (
-              <option disabled>Cargando...</option>
-            ) : (
-              [...proveedores]
-                .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto))
-                .map(p => (
-                  <option key={p.idProveedor} value={p.idProveedor}>
-                    {p.nombreCompleto}
-                  </option>
-                ))
-            )}
+            {[...proveedores].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto)).map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.nombreCompleto}</option>))}
           </select>
         </div>
-
         <div className="form-group">
           <label htmlFor="numeroFactura">Número de Factura:</label>
-          <input
-            id="numeroFactura"
-            type="text"
-            value={numeroFactura}
-            onChange={(e) => setNumeroFactura(e.target.value)}
-            required
-          />
+          <input id="numeroFactura" type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} required />
         </div>
-
         <div className="form-group">
           <label htmlFor="fechaFactura">Fecha de la Factura:</label>
-          <input
-            id="fechaFactura"
-            type="date"
-            value={fechaFactura}
-            onChange={(e) => setFechaFactura(e.target.value)}
-            required
-          />
+          <input id="fechaFactura" type="date" value={fechaFactura} onChange={(e) => setFechaFactura(e.target.value)} required />
         </div>
-
         <div className="form-group">
           <label htmlFor="estatus">Estatus:</label>
-          <select
-            id="estatus"
-            value={estatus}
-            onChange={(e) => setEstatus(e.target.value)}
-            required
-          >
+          <select id="estatus" value={estatus} onChange={(e) => setEstatus(e.target.value)} required>
             <option value="">-- Seleccione un estatus --</option>
             <option value="Pendiente">Pendiente</option>
             <option value="Recibida">Recibida</option>
@@ -212,7 +178,6 @@ function RegistroFactura() {
             <option value="Pagada">Pagada</option>
           </select>
         </div>
-
         <div className="monto-group">
           <label htmlFor="monto">Monto:</label>
           <div className="monto-controls">
@@ -220,38 +185,19 @@ function RegistroFactura() {
             <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
             <div className="monto-input-container">
               <span>$</span>
-              <input
-                id="monto"
-                type="number"
-                value={monto}
-                onChange={handleMontoChange}
-                min={MIN_MONTO}
-                max={MAX_MONTO}
-                step="0.01"
-                required
-              />
+              <input id="monto" type="number" value={monto} onChange={handleMontoChange} min={MIN_MONTO} max={MAX_MONTO} step="0.01" required />
             </div>
             <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
             <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
           </div>
         </div>
-
         <div className="form-group full-width">
           <label htmlFor="descripcion">Descripción (Opcional):</label>
-          <textarea
-            id="descripcion"
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            rows="3"
-          />
+          <textarea id="descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows="3" />
         </div>
-
         <div className="submit-button-container">
-          <button type="submit" className="submit-button">
-            Registrar Factura
-          </button>
+          <button type="submit" className="submit-button">Registrar Factura</button>
         </div>
-
         {error && <p className="mensaje mensaje-error">{error}</p>}
         {mensajeExito && <p className="mensaje mensaje-exito">{mensajeExito}</p>}
       </form>
