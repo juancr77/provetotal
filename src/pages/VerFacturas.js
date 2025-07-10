@@ -4,16 +4,22 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Link } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/vistasTablas.css';
 
 function VerFacturas() {
+  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
   const [facturas, setFacturas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Se mantiene toda la lógica para obtener las facturas.
     const obtenerFacturas = async () => {
+      // Si no hay usuario, no se intenta cargar nada.
+      if (!currentUser) {
+        setCargando(false);
+        return;
+      }
       try {
         const facturasRef = collection(db, "facturas");
         const q = query(facturasRef, orderBy("fechaFactura", "desc"));
@@ -34,10 +40,13 @@ function VerFacturas() {
     };
 
     obtenerFacturas();
-  }, []);
+  }, [currentUser]); // Se añade currentUser como dependencia
 
-  // Se mantiene toda la lógica para generar el archivo Excel.
   const generateExcel = async () => {
+    // Se protege la función
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para generar reportes.");
+    }
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Listado de Facturas", {
@@ -123,14 +132,20 @@ function VerFacturas() {
   };
 
   if (cargando) {
-    return <p className="loading-message">Cargando facturas...</p>;
+    return <p className="loading-message">Cargando...</p>;
   }
-  if (error) {
-    return <p className="error-message">{error}</p>;
+
+  // Si no hay usuario, se muestra el mensaje de autenticación.
+  if (!currentUser) {
+    return (
+      <div className="vista-container">
+        <h2>Lista de Facturas Registradas</h2>
+        <p className="auth-message">Necesitas autenticarte para ver las facturas.</p>
+      </div>
+    );
   }
 
   return (
-    // ✅ ÚNICO CAMBIO: Se usa la clase unificada para el contenedor con ancho limitado.
     <div className="vista-container">
       <h2>Lista de Facturas Registradas</h2>
       <button 
@@ -156,10 +171,10 @@ function VerFacturas() {
             </tr>
           </thead>
           <tbody>
-            {facturas.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="empty-message">No hay facturas registradas.</td>
-              </tr>
+            {error ? (
+              <tr><td colSpan="8" className="error-message">{error}</td></tr>
+            ) : facturas.length === 0 ? (
+              <tr><td colSpan="8" className="empty-message">No hay facturas registradas.</td></tr>
             ) : (
               facturas.map(factura => (
                 <tr key={factura.id}>

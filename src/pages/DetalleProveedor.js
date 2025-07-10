@@ -4,9 +4,11 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/DetalleVista.css';
 
 function DetalleProveedor() {
+  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
   const { proveedorId } = useParams();
   const navigate = useNavigate();
 
@@ -44,6 +46,9 @@ function DetalleProveedor() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para actualizar un proveedor.");
+    }
     try {
       const docRef = doc(db, "proveedores", proveedorId);
       await updateDoc(docRef, formData);
@@ -55,6 +60,9 @@ function DetalleProveedor() {
   };
 
   const handleDelete = async () => {
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para eliminar un proveedor.");
+    }
     if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
       try {
         await deleteDoc(doc(db, "proveedores", proveedorId));
@@ -66,6 +74,9 @@ function DetalleProveedor() {
   };
 
   const generarPDF = async () => {
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para imprimir detalles.");
+    }
     if (!proveedor) return;
     const docPDF = new jsPDF('p', 'pt', 'letter');
     const pdfWidth = docPDF.internal.pageSize.getWidth();
@@ -136,7 +147,26 @@ function DetalleProveedor() {
         </>
       ) : (
         <form className="detalle-form" onSubmit={handleUpdate}>
-          {/* ... (el resto del formulario de edición) ... */}
+          <div className="form-group">
+            <label htmlFor="idProveedor">ID Proveedor:</label>
+            <input id="idProveedor" type="text" value={formData.idProveedor || ''} disabled readOnly />
+          </div>
+          <div className="form-group">
+            <label htmlFor="nombre">Nombre(s):</label>
+            <input id="nombre" type="text" name="nombre" value={formData.nombre || ''} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="apellidoPaterno">Apellido Paterno:</label>
+            <input id="apellidoPaterno" type="text" name="apellidoPaterno" value={formData.apellidoPaterno || ''} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="apellidoMaterno">Apellido Materno:</label>
+            <input id="apellidoMaterno" type="text" name="apellidoMaterno" value={formData.apellidoMaterno || ''} onChange={handleChange} />
+          </div>
+          <div className="detalle-acciones">
+            <button className="btn btn-editar" type="submit">✅ Guardar Cambios</button>
+            <button className="btn btn-secundario" type="button" onClick={() => setIsEditing(false)}>❌ Cancelar</button>
+          </div>
         </form>
       )}
       <Link className="link-volver" to="/ver-proveedores">← Volver a la lista</Link>

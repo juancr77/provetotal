@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
+import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/Formulario.css';
 
 const getTodayDateString = () => {
@@ -12,6 +13,7 @@ const getTodayDateString = () => {
 };
 
 function RegistroFactura() {
+  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
   const [proveedores, setProveedores] = useState([]);
   const [idProveedor, setIdProveedor] = useState('');
   const [nombreProveedor, setNombreProveedor] = useState('');
@@ -84,6 +86,11 @@ function RegistroFactura() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // Se añade la verificación de autenticación
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para registrar una factura.");
+    }
+    
     setError(null);
     setMensajeExito('');
 

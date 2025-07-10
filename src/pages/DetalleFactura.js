@@ -4,9 +4,11 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/DetalleVista.css';
 
 function DetalleFactura() {
+  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
   const { facturaId } = useParams();
   const navigate = useNavigate();
 
@@ -74,6 +76,9 @@ function DetalleFactura() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para actualizar una factura.");
+    }
     try {
       const docRef = doc(db, "facturas", facturaId);
       const dataToUpdate = { ...formData, monto: parseFloat(formData.monto), fechaFactura: new Date(formData.fechaFactura) };
@@ -87,6 +92,9 @@ function DetalleFactura() {
   };
 
   const handleDelete = async () => {
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para eliminar una factura.");
+    }
     if (window.confirm("¿Estás seguro de que quieres eliminar esta factura?")) {
       try {
         await deleteDoc(doc(db, "facturas", facturaId));
@@ -98,6 +106,9 @@ function DetalleFactura() {
   };
 
   const generarPDF = async () => {
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para imprimir detalles.");
+    }
     if (!factura) return;
     const docPDF = new jsPDF('p', 'pt', 'letter');
     const pdfWidth = docPDF.internal.pageSize.getWidth();
@@ -192,7 +203,49 @@ function DetalleFactura() {
         </>
       ) : (
         <form className="detalle-form" onSubmit={handleUpdate}>
-          {/* ... (el resto del formulario de edición) ... */}
+          <div className="form-group">
+            <label>Proveedor:</label>
+            <input type="text" value={formData.nombreProveedor || ''} disabled readOnly />
+          </div>
+          <div className="form-group">
+            <label htmlFor="numeroFactura">Número de Factura:</label>
+            <input id="numeroFactura" type="text" name="numeroFactura" value={formData.numeroFactura || ''} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="fechaFactura">Fecha:</label>
+            <input id="fechaFactura" type="date" name="fechaFactura" value={formData.fechaFactura || ''} onChange={handleChange} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea>
+          </div>
+          <div className="form-group">
+            <label>Monto:</label>
+            <div className="monto-controls">
+              <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+              <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+              <div className="monto-input-container">
+                <span>$</span>
+                <input type="number" name="monto" value={formData.monto} onChange={handleMontoChange} min={MIN_MONTO} max={MAX_MONTO} required />
+              </div>
+              <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+              <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+            </div>
+          </div>
+          <div className="form-group">
+            <label htmlFor="estatus">Estatus:</label>
+            <select id="estatus" name="estatus" value={formData.estatus} onChange={handleChange} required>
+              <option value="Pendiente">Pendiente</option>
+              <option value="Recibida">Recibida</option>
+              <option value="Con solventación">Con solventación</option>
+              <option value="En contabilidad">En contabilidad</option>
+              <option value="Pagada">Pagada</option>
+            </select>
+          </div>
+          <div className="detalle-acciones">
+            <button className="btn btn-editar" type="submit">✅ Guardar Cambios</button>
+            <button className="btn btn-secundario" type="button" onClick={() => setIsEditing(false)}>❌ Cancelar</button>
+          </div>
         </form>
       )}
       <Link className="link-volver" to="/ver-facturas">← Volver a la lista</Link>

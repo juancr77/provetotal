@@ -4,16 +4,22 @@ import { db } from '../firebase';
 import { collection, getDocs } from "firebase/firestore";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/vistasTablas.css';
 
 function VerProveedores() {
+  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
   const [proveedores, setProveedores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
-  // Se mantiene toda la lógica para obtener los proveedores.
   useEffect(() => {
+    // La función para obtener datos solo se ejecuta si hay un usuario autenticado.
     const obtenerProveedores = async () => {
+      if (!currentUser) {
+        setCargando(false);
+        return;
+      }
       try {
         const querySnapshot = await getDocs(collection(db, "proveedores"));
         const listaProveedores = querySnapshot.docs.map(doc => ({
@@ -30,10 +36,13 @@ function VerProveedores() {
     };
 
     obtenerProveedores();
-  }, []);
+  }, [currentUser]); // Se añade currentUser como dependencia
 
-  // Se mantiene toda la lógica para generar el archivo Excel.
   const generateExcel = async () => {
+    // Se añade la protección a la función
+    if (!currentUser) {
+      return alert("Necesitas autenticarte para generar reportes.");
+    }
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Listado de Proveedores", {
@@ -105,11 +114,20 @@ function VerProveedores() {
     }
   };
 
-  if (cargando) return <p className="loading-message">Cargando proveedores...</p>;
-  if (error) return <p className="error-message">{error}</p>;
+  if (cargando) return <p className="loading-message">Cargando...</p>;
+  
+  // --- LÓGICA DE VISUALIZACIÓN CONDICIONAL ---
+  if (!currentUser) {
+    return (
+      <div className="vista-container">
+        <h2>Lista de Proveedores Registrados</h2>
+        <p className="auth-message">Necesitas autenticarte para ver los proveedores.</p>
+      </div>
+    );
+  }
 
+  // Este contenido solo se muestra si hay un usuario autenticado.
   return (
-    // ✅ CAMBIOS: Se usan las clases unificadas para el contenedor y el wrapper de la tabla.
     <div className="vista-container">
       <h2>Lista de Proveedores Registrados</h2>
       <button 
@@ -121,7 +139,7 @@ function VerProveedores() {
       </button>
       
       <div className="table-container">
-        <table className="proveedores-table">
+        <table>
           <thead>
             <tr>
               <th>ID de Proveedor</th>
@@ -132,10 +150,10 @@ function VerProveedores() {
             </tr>
           </thead>
           <tbody>
-            {proveedores.length === 0 ? (
-              <tr>
-                <td colSpan="5" className="empty-message">No hay proveedores registrados.</td>
-              </tr>
+            {error ? (
+              <tr><td colSpan="5" className="error-message">{error}</td></tr>
+            ) : proveedores.length === 0 ? (
+              <tr><td colSpan="5" className="empty-message">No hay proveedores registrados.</td></tr>
             ) : (
               proveedores.map(proveedor => (
                 <tr key={proveedor.id}>
