@@ -41,7 +41,7 @@ function Navigation() {
 
   return (
     <nav className="app-nav">
-      <h1>Gestión</h1>
+      <h1>Gestión Compras Arteaga</h1>
       <div className="nav-links">
         {/* Se usa NavLink para que React Router pueda aplicar la clase 'active' */}
         <NavLink to="/ver-proveedores">Proveedores</NavLink>

@@ -32,10 +32,10 @@ nav {
 }
 
 nav h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--pastel-purple);
-  margin-right: 2rem;
+margin: 0;
+font-size: 1.5rem;
+color: var(--pastel-purple);
+margin-right: 2rem;
 }
 
 nav a {
