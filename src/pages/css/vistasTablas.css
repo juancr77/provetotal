@@ -108,10 +108,12 @@ td {
 /* --- Celda de Estatus con Colores --- */
 td[data-status] {
   font-weight: 600;
-  padding: 0.5rem 1rem;
-  border-radius: 15px;
+  padding: 0.2rem 0.6rem; /* Se reduce aún más el padding */
+  font-size: 1.2rem;
+  border-radius: 8px; /* Se ajusta el radio del borde */
   text-align: center;
-  background-color: var(--color-border); /* Color por defecto */
+  white-space: nowrap;
+  background-color: var(--color-border);
 }
 
 td[data-status="Pendiente"] { background-color: var(--status-pendiente); }
