@@ -1,8 +1,16 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Link, NavLink } from 'react-router-dom';
+import { 
+  BrowserRouter, 
+  Routes, 
+  Route, 
+  Link, 
+  NavLink, // Se importa NavLink para los estilos de la ruta activa
+  useNavigate, 
+  useLocation 
+} from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 
-// Importación de páginas
+// Importación de todas las páginas
 import VerProveedores from './pages/VerProveedores';
 import DetalleProveedor from './pages/DetalleProveedor';
 import RegistroFactura from './pages/RegistroFactura';
@@ -11,20 +19,23 @@ import DetalleFactura from './pages/DetalleFactura';
 import GastosPorProveedor from './pages/GastosPorProveedor';
 import GastosPorMes from './pages/GastosPorMes';
 import RegistroProveedor from './pages/RegistroProveedor';
+import LoginPage from './pages/LoginPage';
 
 // Importación de CSS
 import './App.css';
 
-// Componente de Navegación con lógica de autenticación
+// --- Componente de Navegación ---
 function Navigation() {
-  const { currentUser, loginWithGoogle, logout } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleLogin = async () => {
+  const handleLogout = async () => {
     try {
-      await loginWithGoogle();
-    } catch (error) {
-      console.error("Error al iniciar sesión:", error);
-      alert("No se pudo iniciar sesión. Inténtalo de nuevo.");
+      await logout();
+      navigate('/');
+    } catch {
+      alert("Error al cerrar sesión");
     }
   };
 
@@ -32,6 +43,7 @@ function Navigation() {
     <nav className="app-nav">
       <h1>Gestión</h1>
       <div className="nav-links">
+        {/* Se usa NavLink para que React Router pueda aplicar la clase 'active' */}
         <NavLink to="/ver-proveedores">Proveedores</NavLink>
         <span className="link-separator">|</span>
         <NavLink to="/registrar-proveedor">Registrar Proveedor</NavLink>
@@ -48,17 +60,19 @@ function Navigation() {
         {currentUser ? (
           <>
             <span className="user-email">{currentUser.displayName || currentUser.email}</span>
-            <button onClick={logout} className="auth-button logout">Cerrar Sesión</button>
+            <button onClick={handleLogout} className="auth-button logout">Cerrar Sesión</button>
           </>
         ) : (
-          <button onClick={handleLogin} className="auth-button login">Iniciar Sesión</button>
+          <Link to="/login" state={{ from: location }}>
+            <button className="auth-button login">Iniciar Sesión</button>
+          </Link>
         )}
       </div>
     </nav>
   );
 }
 
-// Componente principal de la App
+// --- Componente Principal de la App ---
 function App() {
   return (
     <AuthProvider>
@@ -67,14 +81,22 @@ function App() {
           <Navigation />
           <main className="main-content">
             <Routes>
+              {/* Ruta pública para iniciar sesión */}
+              <Route path="/login" element={<LoginPage />} />
+              
+              {/* Rutas de la aplicación */}
               <Route path="/registrar-proveedor" element={<RegistroProveedor />} />
               <Route path="/ver-proveedores" element={<VerProveedores />} />
               <Route path="/proveedor/:proveedorId" element={<DetalleProveedor />} />
+              
               <Route path="/registrar-factura" element={<RegistroFactura />} />
               <Route path="/ver-facturas" element={<VerFacturas />} />
               <Route path="/factura/:facturaId" element={<DetalleFactura />} />
+              
               <Route path="/gastos-proveedor" element={<GastosPorProveedor />} />
               <Route path="/gastos-mes" element={<GastosPorMes />} />
+              
+              {/* Ruta por defecto */}
               <Route path="/" element={<VerFacturas />} />
             </Routes>
           </main>
