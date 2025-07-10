@@ -10,7 +10,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBcLVqVy0vVXxlSFpKC6yn28sl8P_pP_JA",
   authDomain: "facturas-688b6.firebaseapp.com",
   projectId: "facturas-688b6",
-  storageBucket: "facturas-688b6.appspot.com",
+  storageBucket: "facturas-688b6.firebasestorage.app",
   messagingSenderId: "858379261395",
   appId: "1:858379261395:web:ba33b7b042e1108c424b26",
   measurementId: "G-GXVFE9HYNP"
