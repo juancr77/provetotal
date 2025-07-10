@@ -72,14 +72,13 @@
 /* --- Badge de Estatus --- */
 /* --- Badge de Estatus --- */
 .status-badge {
-  padding: 0.4rem 0.9rem;
-  border-radius: 10px; /* Radio de borde más sutil para un look de recuadro */
- /* border: 1px solid rgba(0, 0, 0, 0.08);  Borde sutil para definir la caja */
+  padding: 0.5rem 1rem; /* Se aumenta el espacio interior */
+  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 1.2rem; /* Se aumenta ligeramente el tamaño del texto */
   text-align: center;
   display: inline-block;
-  color: #3b3b3b; /* Color de texto oscuro para mejor contraste */
+  color: #3b3b3b; 
 }
 
 .status-badge[data-status="Pendiente"] { background-color: var(--status-pendiente); }
