@@ -1,0 +1,134 @@
+/* /src/styles/components.css */
+
+/* === Botones Genéricos === */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.btn-editar { background-color: var(--color-primario); color: var(--color-texto-titulo); }
+.btn-eliminar { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
+.btn-secundario { background-color: #e9ecef; color: #343a40; }
+.btn-exito { background-color: var(--color-exito); color: var(--color-texto-exito); }
+.btn-exito:hover:not(:disabled) { background-color: var(--color-exito-oscuro); }
+
+/* === Estilos de Formularios === */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  box-sizing: border-box;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(160, 196, 255, 0.5);
+}
+
+/* === Mensajes y Alertas === */
+.mensaje, .auth-message, .login-error {
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin: 1.5rem 0;
+  font-weight: 500;
+}
+
+.mensaje-error, .login-error {
+  background-color: var(--color-peligro);
+  color: var(--color-texto-peligro);
+}
+
+.mensaje-exito {
+  background-color: var(--color-exito);
+  color: var(--color-texto-exito);
+}
+
+.auth-message {
+  background-color: #e9ecef;
+  color: var(--color-texto-secundario);
+}
+
+/* Mensajes en tablas */
+.loading-message, .error-message, .empty-message {
+  text-align: center;
+  padding: 3rem;
+  font-size: 1.2rem;
+  color: #777;
+}
+.error-message {
+  color: var(--color-texto-peligro);
+}
+
+/* rules  */
+
+/* === Controles de Monto (Para formularios de factura) === */
+
+.monto-controls {
+  display: flex;
+  align-items: center; 
+  gap: 0.5rem;      
+}
+
+/* Contenedor que envuelve el símbolo '$' y el input */
+.monto-input-container {
+  display: flex;                 
+  align-items: center;           
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  padding-left: 0.75rem;          
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  
+  /* --- SOLUCIÓN AQUÍ --- */
+  flex-grow: 1; /* Esto hace que el contenedor del input se expanda */
+}
+
+/* Le quitamos el borde y fondo al input para que se integre al contenedor */
+.monto-input-container input {
+  border: none;
+  outline: none;
+  background-color: transparent;
+  padding-left: 0.5rem;
+  
+  /* --- Y AQUÍ --- */
+  width: 100%; /* El input debe ocupar el 100% de su contenedor (que ahora es más grande) */
+}
+
+/* Opcional: Evita que los botones se encojan */
+.monto-controls button {
+    flex-shrink: 0;
+}
+
+/* ... (el resto de tus estilos como :focus-within, etc.) */

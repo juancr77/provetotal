@@ -6,6 +6,9 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/vistasTablas.css';
+import './css/main.css';
+import './css/pages.css';
+import './css/components.css';
 
 function VerFacturas() {
   const { currentUser } = useAuth(); // Se obtiene el estado del usuario

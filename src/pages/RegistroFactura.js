@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
-import './css/Formulario.css';
+
+import './css/components.css';
 
 const getTodayDateString = () => {
   const today = new Date();

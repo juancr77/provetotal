@@ -1,0 +1,90 @@
+/* /src/styles/pages.css */
+
+/* === Contenedores de Página === */
+.detalle-container,
+.vista-container,
+.login-container,
+.registro-factura-container {
+  background-color: var(--color-superficie);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: var(--sombra-suave);
+  margin: 2rem auto;
+  width: 100%;
+  max-width: 1100px;
+  box-sizing: border-box;
+}
+
+.login-container {
+  max-width: 450px;
+}
+
+.detalle-container {
+  max-width: 700px;
+}
+
+/* === Estilos para Tablas === */
+.table-container {
+  width: 100%;
+  overflow-x: auto; /* Permite scroll horizontal en pantallas pequeñas */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: middle;
+}
+
+thead {
+  background-color: #f2f6ff;
+}
+
+th {
+  color: var(--color-texto-titulo);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+tbody tr:hover {
+  background-color: var(--color-fondo);
+}
+
+/* Estilos de celda de estatus */
+td[data-status] {
+  font-weight: 600;
+  padding: 0.5rem 0.8rem;
+  border-radius: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+td[data-status="Pendiente"] { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
+td[data-status="Recibida"] { background-color: #fff4d5; color: #6d5815; }
+td[data-status="Con solventación"] { background-color: #ffdceb; color: #6a2444; }
+td[data-status="En contabilidad"] { background-color: var(--color-primario); color: var(--color-texto-titulo); }
+td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--color-texto-exito); } /* Corregido de data-satus */
+
+
+/* === Media Query General para Páginas === */
+@media (max-width: 768px) {
+  .detalle-container,
+  .vista-container,
+  .login-container,
+  .registro-factura-container {
+    padding: 1.5rem 1rem;
+    margin-top: 1rem;
+    border-radius: 0;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+}
+

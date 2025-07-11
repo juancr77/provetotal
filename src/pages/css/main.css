@@ -1,0 +1,149 @@
+/* /src/styles/main.css */
+
+/* === Paleta de Colores Pasteles y Variables Globales === */
+:root {
+  --color-primario: #a0c4ff;         /* Azul pastel principal */
+  --color-primario-oscuro: #8ab4f8;   /* Azul para hover */
+  --color-texto-titulo: #1c3d5a;      /* Azul marino para títulos */
+
+  --color-peligro: #ffadad;          /* Rojo pastel para peligro */
+  --color-peligro-oscuro: #ff9a9a;    /* Rojo para hover */
+  --color-texto-peligro: #721c24;     /* Rojo oscuro para texto */
+
+  --color-exito: #bde4cb;            /* Verde pastel para éxito */
+  --color-exito-oscuro: #a3d6b4;      /* Verde para hover */
+  --color-texto-exito: #1e4620;       /* Verde oscuro para texto */
+
+  --color-fondo: #f8f9fa;             /* Gris muy claro */
+  --color-superficie: #ffffff;        /* Blanco para tarjetas y fondos */
+  --color-borde: #e2e8f0;
+  --color-texto-principal: #2d3748;
+  --color-texto-secundario: #718096;
+  --sombra-suave: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* === Estilos Base y Tipografía === */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--color-fondo);
+  color: var(--color-texto-principal);
+}
+
+/* === Estilo Unificado para Títulos === */
+h2 {
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--color-texto-titulo);
+  margin-bottom: 2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-primario);
+}
+
+/* === Barra de Navegación === */
+.app-nav {
+  background-color: var(--color-superficie);
+  padding: 1rem 2rem;
+  box-shadow: var(--sombra-suave);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.nav-branding {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--color-texto-titulo);
+  text-decoration: none;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 0 auto;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: var(--color-texto-secundario);
+  font-weight: 500;
+  padding-bottom: 5px;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--color-primario);
+}
+
+.nav-links a.active {
+  color: var(--color-texto-titulo);
+  font-weight: 700;
+  border-bottom-color: var(--color-primario);
+}
+
+.nav-user-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-email {
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+/* === Estilos para Botones de Autenticación === */
+.auth-button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.auth-button.login {
+  background-color: var(--color-primario);
+  color: var(--color-texto-titulo);
+}
+.auth-button.login:hover {
+  background-color: var(--color-primario-oscuro);
+}
+
+.auth-button.logout {
+  background-color: var(--color-peligro);
+  color: var(--color-texto-peligro);
+}
+.auth-button.logout:hover {
+  background-color: var(--color-peligro-oscuro);
+}
+
+/* === Media Query para Responsividad de la Navegación === */
+@media (max-width: 768px) {
+  .app-nav {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .nav-links {
+    order: 3; /* Mueve los links al final */
+    width: 100%;
+    justify-content: center;
+  }
+  .nav-user-section {
+    order: 2;
+  }
+  .nav-branding {
+    order: 1;
+  }
+}

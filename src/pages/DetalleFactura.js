@@ -6,6 +6,9 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
 import './css/DetalleVista.css';
+import './css/main.css';
+import './css/pages.css';
+import './css/components.css';
 
 function DetalleFactura() {
   const { currentUser } = useAuth(); // Se obtiene el estado del usuario

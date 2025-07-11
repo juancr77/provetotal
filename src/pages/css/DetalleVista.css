@@ -1,216 +1,78 @@
-/* --- Estilos para las Vistas de Detalle --- */
-:root {
-  --color-surface: #ffffff;
-  --color-primary: #7795f8;
-  --color-primary-light: #a3bffa;
-  --color-primary-dark: #5d7fe3;
-  --color-danger: #e53e3e;
-  --color-danger-dark: #c53030;
-  --color-secondary: #6c757d;
-  --color-secondary-dark: #5a6268;
-  --color-text-primary: #343a40;
-  --color-text-secondary: #6c757d;
-  --color-border: #dee2e6;
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-focus: 0 0 0 3px rgba(119, 149, 248, 0.2);
-
-  /* ✅ Colores de Estatus más fuertes y con el cambio a crema */
-  --status-pendiente: #ffcdd2;     /* Rojo pastel más intenso */
-  --status-recibida: #fff59d;      /* Amarillo pastel más intenso */
-  --status-solventacion: #f8bbd0;  /* Rosa pastel más intenso */
-  --status-contabilidad: #fffde7;  /* Tono crema/marfil */
-  --status-pagada: #c8e6c9;        /* Verde pastel más intenso */
-}
-
-/* --- Contenedor Principal --- */
+/* src/pages/css/DetalleVista.css */
 .detalle-container {
-  background-color: var(--color-surface);
+  background-color: #ffffff;
   padding: 2rem 2.5rem;
   border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  width: 100%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   max-width: 700px;
-  margin: 0 auto;
-  box-sizing: border-box;
+  margin: 20px auto;
 }
 
 .detalle-container h2 {
   text-align: center;
-  color: var(--color-text-primary);
+  color: var(--color-primario-texto); /* Título con color pastel oscuro */
   margin-top: 0;
   margin-bottom: 2rem;
   font-size: 1.8rem;
 }
 
-/* --- Vista de Información --- */
 .info-card {
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 2rem;
+  background-color: #fcfdff;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: 180px 1fr;
   gap: 1.2rem;
-  align-items: center;
 }
 
 .info-grid dt {
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: #718096;
 }
 
 .info-grid dd {
   margin: 0;
-  color: var(--color-text-primary);
-  /* ✅ Se aumenta el tamaño de la fuente para los datos */
-  font-size: 1.1rem; 
+  font-size: 1.05rem;
 }
 
-/* --- Badge de Estatus --- */
-/* --- Badge de Estatus --- */
 .status-badge {
-  padding: 0.5rem 1rem; /* Se aumenta el espacio interior */
-  border-radius: 8px;
+  padding: 5px 12px;
+  border-radius: 16px;
   font-weight: 600;
-  font-size: 1.2rem; /* Se aumenta ligeramente el tamaño del texto */
-  text-align: center;
-  display: inline-block;
-  color: #3b3b3b; 
 }
+/* ... (los colores de status-badge se mantienen) ... */
 
-.status-badge[data-status="Pendiente"] { background-color: var(--status-pendiente); }
-.status-badge[data-status="Recibida"] { background-color: var(--status-recibida); }
-.status-badge[data-status="Con solventación"] { background-color: var(--status-solventacion); }
-.status-badge[data-status="En contabilidad"] { background-color: var(--status-contabilidad); }
-.status-badge[data-status="Pagada"] { background-color: var(--status-pagada); }
-
-
-/* --- Grupo de Botones de Acción --- */
 .detalle-acciones {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 2rem;
+  margin-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 2rem;
 }
 
-/* --- Estilos Base de Botones --- */
 .btn {
-  padding: 0.7rem 1.2rem;
+  padding: 10px 20px;
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: all 0.2s;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .btn:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
 }
 
-.btn-editar { background-color: var(--color-primary); color: white; }
-.btn-editar:hover { background-color: var(--color-primary-dark); }
-.btn-eliminar { background-color: var(--color-danger); color: white; }
-.btn-eliminar:hover { background-color: var(--color-danger-dark); }
-.btn-secundario { background-color: var(--color-secondary); color: white; }
-.btn-secundario:hover { background-color: var(--color-secondary-dark); }
-
-
-/* --- Formulario de Edición --- */
-.detalle-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.form-group label {
-  font-weight: 500;
-  color: var(--color-text-secondary);
-}
-.form-group input, .form-group select, .form-group textarea {
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  font-size: 1rem;
-  width: 100%;
-  box-sizing: border-box;
-}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
-}
-.form-group textarea {
-    resize: vertical;
-    min-height: 80px;
-}
-
-/* --- Controles de Monto --- */
-.monto-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.monto-controls .monto-input-container {
-  position: relative;
-  flex-grow: 1;
-}
-.monto-input-container span {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-secondary);
-}
-.monto-input-container input[type="number"] {
-  padding-left: 2.5rem;
-  text-align: right;
-}
-.monto-controls button {
-  background-color: #e9ecef;
-  color: var(--color-text-primary);
-  border: none;
-  border-radius: 6px;
-  padding: 0.7rem 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.monto-controls button:hover {
-  background-color: #ced4da;
-}
-
-/* --- Enlace para Volver --- */
-.link-volver {
-  display: inline-block;
-  margin-top: 1.5rem;
-  text-align: center;
-  color: var(--color-primary);
-  text-decoration: none;
-  font-weight: 600;
-}
-.link-volver:hover {
-  text-decoration: underline;
-}
-
-/* --- Mensajes de Carga y Error --- */
-.loading-message, .error-message {
-  text-align: center;
-  padding: 3rem;
-  font-size: 1.2rem;
-  color: #777;
-}
-.error-message {
-  color: var(--color-danger);
-  font-weight: 500;
-}
+/* Colores pastel para los botones */
+.btn-editar { background-color: var(--color-primario); color: var(--color-primario-texto); }
+.btn-eliminar { background-color: var(--color-peligro); color: #721c24; }
+.btn-secundario { background-color: #e9ecef; color: #343a40; }
