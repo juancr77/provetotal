@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
 
-import './css/components.css';
+import './css/Formulario.css';
 
 const getTodayDateString = () => {
   const today = new Date();

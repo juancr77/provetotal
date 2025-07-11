@@ -1,166 +1,98 @@
-/* --- Paleta de Colores y Variables para Formularios --- */
-:root {
-  --color-background: #f8f9fa;
-  --color-surface: #ffffff;
-  --color-primary: #7795f8;
-  --color-primary-light: #a3bffa;
-  --color-primary-dark: #6786e2;
-  --color-secondary: #e9ecef;
-  --color-secondary-dark: #ced4da;
-  --color-text-primary: #343a40;
-  --color-text-secondary: #6c757d;
-  --color-border: #dee2e6;
-  --color-success-bg: #e6ffed;
-  --color-success-text: #2f9e4f;
-  --color-error-bg: #ffe3e3;
-  --color-error-text: #d94848;
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-focus: 0 0 0 3px rgba(119, 149, 248, 0.2);
-}
+/* Para: RegistroFactura.js y RegistroProveedor.js */
 
-/* --- Contenedor del Formulario --- */
-.registro-factura-container { /* Puedes usar una clase más genérica como .form-container */
-  background-color: var(--color-surface);
-  padding: 2rem 2.5rem;
+.registro-factura-container {
+  background-color: var(--color-superficie);
+  padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  width: 100%;
+  box-shadow: var(--sombra-suave);
+  margin: 2rem auto;
   max-width: 800px;
-  margin: 0 auto;
-  box-sizing: border-box;
 }
 
 .registro-factura-container h2 {
-  text-align: center;
-  color: var(--color-text-primary);
-  margin-bottom: 2rem;
-  font-size: 1.8rem;
-  font-weight: 600;
+    color: var(--color-texto-titulo);
+    border-bottom: 2px solid var(--color-primario);
+    padding-bottom: 1rem;
 }
 
-/* --- Estructura del Formulario --- */
 .registro-form {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
 }
 
-/* --- Campos del Formulario --- */
-.form-group, .monto-group {
-  display: flex;
-  flex-direction: column;
+.form-group {
+  margin-bottom: 0; /* Se elimina el margen para que el grid lo controle */
 }
 
-.form-group label, .monto-group label {
+.form-group label {
+  display: block;
   margin-bottom: 0.5rem;
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
 }
 
-input[type="text"],
-input[type="number"],
-input[type="date"],
-select,
-textarea {
+.form-group input,
+.form-group select,
+.form-group textarea {
   width: 100%;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--color-border);
+  padding: 12px;
+  border: 1px solid var(--color-borde);
   border-radius: 8px;
-  background-color: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
 }
 
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--color-primary-light);
-  box-shadow: var(--shadow-focus);
-}
-
-textarea { resize: vertical; min-height: 80px; }
-
-/* --- Grupo Específico de Monto --- */
+/* Controles de monto */
 .monto-controls {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
-.monto-controls .monto-input-container {
-  position: relative;
+
+.monto-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
+  padding-left: 0.75rem;
+  background-color: #fff;
   flex-grow: 1;
 }
-.monto-input-container span {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--color-text-secondary);
-}
-.monto-input-container input[type="number"] {
-  padding-left: 2.5rem;
-}
-.monto-controls button {
-  background-color: var(--color-secondary);
-  color: var(--color-text-primary);
+
+.monto-input-container input {
+  background-color: transparent;
   border: none;
-  border-radius: 6px;
-  padding: 0.7rem 1rem;
-  font-weight: 600;
+  outline: none;
+  width: 100%;
+  padding: 12px 10px 12px 8px;
+  font-size: 1rem;
+}
+
+.monto-group, .full-width, .submit-button-container {
+  grid-column: 1 / -1; /* Ocupa todo el ancho */
+}
+
+.submit-button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  border: none;
+  font-weight: bold;
+  background-color: var(--color-exito);
+  color: var(--color-texto-exito);
   cursor: pointer;
   transition: background-color 0.2s;
 }
-.monto-controls button:hover {
-  background-color: var(--color-secondary-dark);
-}
-
-/* --- Botón de Envío --- */
-.submit-button {
-  width: 100%;
-  padding: 1rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-  background-color: var(--color-primary);
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
-}
 .submit-button:hover {
-  background-color: var(--color-primary-dark);
-  transform: translateY(-2px);
+    background-color: var(--color-exito-oscuro);
 }
 
-/* --- Mensajes de Feedback --- */
-.mensaje {
-  grid-column: 1 / -1;
-  padding: 1rem;
-  border-radius: 8px;
-  text-align: center;
-  font-weight: 500;
-}
-.mensaje-error {
-  background-color: var(--color-error-bg);
-  color: var(--color-error-text);
-}
-.mensaje-exito {
-  background-color: var(--color-success-bg);
-  color: var(--color-success-text);
-}
-
-/* --- Responsividad del Formulario --- */
-@media (min-width: 768px) {
-  .registro-form {
-    grid-template-columns: repeat(2, 1fr);
-    column-gap: 2rem;
-  }
-  .monto-group,
-  .form-group.full-width,
-  .submit-button-container,
-  .mensaje {
+.mensaje-error, .mensaje-exito {
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 1rem;
     grid-column: 1 / -1;
-  }
 }
+.mensaje-error { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
+.mensaje-exito { background-color: var(--color-exito); color: var(--color-texto-exito); }

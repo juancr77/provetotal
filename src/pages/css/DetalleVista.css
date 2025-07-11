@@ -1,26 +1,25 @@
-/* src/pages/css/DetalleVista.css */
+/* Para: DetalleFactura.js y DetalleProveedor.js */
+
 .detalle-container {
-  background-color: #ffffff;
-  padding: 2rem 2.5rem;
+  background-color: var(--color-superficie);
+  padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--sombra-suave);
+  margin: 2rem auto;
   max-width: 700px;
-  margin: 20px auto;
 }
 
 .detalle-container h2 {
-  text-align: center;
-  color: var(--color-primario-texto); /* Título con color pastel oscuro */
-  margin-top: 0;
-  margin-bottom: 2rem;
-  font-size: 1.8rem;
+  color: var(--color-texto-titulo);
+  border-bottom: 2px solid var(--color-primario);
+  padding-bottom: 1rem;
 }
 
 .info-card {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-borde);
   border-radius: 12px;
   padding: 2rem;
-  background-color: #fcfdff;
+  background-color: var(--color-fondo);
 }
 
 .info-grid {
@@ -31,12 +30,7 @@
 
 .info-grid dt {
   font-weight: 600;
-  color: #718096;
-}
-
-.info-grid dd {
-  margin: 0;
-  font-size: 1.05rem;
+  color: var(--color-texto-secundario);
 }
 
 .status-badge {
@@ -44,14 +38,13 @@
   border-radius: 16px;
   font-weight: 600;
 }
-/* ... (los colores de status-badge se mantienen) ... */
 
 .detalle-acciones {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 2rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-borde);
   padding-top: 2rem;
 }
 
@@ -66,13 +59,15 @@
   align-items: center;
   gap: 8px;
 }
-
-.btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-}
-
-/* Colores pastel para los botones */
-.btn-editar { background-color: var(--color-primario); color: var(--color-primario-texto); }
-.btn-eliminar { background-color: var(--color-peligro); color: #721c24; }
+.btn:hover { transform: translateY(-2px); }
+.btn-editar { background-color: var(--color-primario); color: var(--color-texto-titulo); }
+.btn-eliminar { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
 .btn-secundario { background-color: #e9ecef; color: #343a40; }
+
+.link-volver {
+    display: block;
+    margin-top: 2rem;
+    text-align: center;
+    color: var(--color-primario-oscuro);
+    font-weight: bold;
+}

@@ -3,9 +3,6 @@ import { db } from '../firebase';
 import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
 import './css/Formulario.css';
-import './css/main.css';
-import './css/pages.css';
-import './css/components.css';
 
 function RegistroProveedor() {
   const { currentUser } = useAuth();

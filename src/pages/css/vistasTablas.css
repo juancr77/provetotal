@@ -1,79 +1,40 @@
-/* --- Paleta de Colores y Variables para Tablas --- */
-:root {
-  --color-surface: #ffffff;
-  --color-primary: #7795f8;
-  --color-primary-dark: #5d7fe3;
-  --color-text-primary: #343a40;
-  --color-text-secondary: #6c757d;
-  --color-success: #28a745;
-  --color-success-dark: #218838;
-  --color-border: #e0e7f1;
-  --table-header-bg: #f2f6ff;
-  --row-hover-bg: #f8f9fa;
-  --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.08);
+/* Para: VerFacturas, VerProveedores, GastosPorMes, GastosPorProveedor */
 
-  /* Colores de Estatus (para la tabla de facturas) */
-  --status-pendiente: #ffe3e3;
-  --status-recibida: #fffbe3;
-  --status-solventacion: #ffebf1;
-  --status-contabilidad: #e3f2ff;
-  --status-pagada: #e6ffed;
-}
-
-/* --- Contenedor Principal de la Vista --- */
-.vista-container { /* Clase genérica para el contenedor principal */
-  background-color: var(--color-surface);
-  padding: 2rem 2.5rem;
+.vista-container {
+  background-color: var(--color-superficie);
+  padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: var(--shadow-soft);
-  width: 100%;
-  /* max-width: 1200px;  <-- Se ha eliminado esta línea */
-  margin: 0 auto;
-  box-sizing: border-box;
+  box-shadow: var(--sombra-suave);
+  margin: 2rem auto;
+  max-width: 1200px;
 }
 
 .vista-container h2 {
-  text-align: center;
-  color: var(--color-text-primary);
-  margin-bottom: 1.5rem;
-  font-size: 1.8rem;
-  font-weight: 600;
+  color: var(--color-texto-titulo);
+  border-bottom: 2px solid var(--color-primario);
+  padding-bottom: 1rem;
 }
 
-/* --- Botón de Excel --- */
 .excel-button {
   display: block;
   margin-left: auto;
   margin-bottom: 1.5rem;
-  padding: 0.75rem 1.5rem;
-  background-color: var(--color-success);
-  color: white;
+  padding: 12px 20px;
+  background-color: var(--color-exito);
+  color: var(--color-texto-exito);
   border: none;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.95rem;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.2s;
+  transition: background-color 0.2s;
 }
+.excel-button:hover { background-color: var(--color-exito-oscuro); }
 
-.excel-button:hover:not(:disabled) {
-  background-color: var(--color-success-dark);
-  transform: translateY(-2px);
-}
-
-.excel-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* --- Wrapper de la Tabla para Scroll --- */
-.table-container, .table-wrapper {
+.table-container {
   width: 100%;
   overflow-x: auto;
 }
 
-/* --- Estilo General de la Tabla --- */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -82,77 +43,43 @@ table {
 th, td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
 }
 
 thead {
-  background-color: var(--table-header-bg);
+  background-color: #f2f6ff;
 }
 
 th {
-  color: var(--color-text-primary);
+  color: var(--color-texto-titulo);
   font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
 }
 
-tbody tr:hover {
-  background-color: var(--row-hover-bg);
-}
-
-td {
-  color: var(--color-text-secondary);
-}
-
-/* --- Celda de Estatus con Colores --- */
 td[data-status] {
   font-weight: 600;
-  padding: 0.2rem 0.6rem; /* Se reduce aún más el padding */
-  font-size: 1.2rem;
-  border-radius: 8px; /* Se ajusta el radio del borde */
+  padding: 0.5rem 0.8rem;
+  border-radius: 16px;
   text-align: center;
   white-space: nowrap;
-  background-color: var(--color-border);
 }
 
-td[data-status="Pendiente"] { background-color: var(--status-pendiente); }
-td[data-status="Recibida"] { background-color: var(--status-recibida); }
-td[data-status="Con solventación"] { background-color: var(--status-solventacion); }
-td[data-status="En contabilidad"] { background-color: var(--status-contabilidad); }
-td[data-satus="Pagada"] { background-color: var(--status-pagada); }
+td[data-status="Pendiente"] { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
+td[data-status="Recibida"] { background-color: #fff4d5; color: #6d5815; }
+td[data-status="Con solventación"] { background-color: #ffdceb; color: #6a2444; }
+td[data-status="En contabilidad"] { background-color: var(--color-primario); color: var(--color-texto-titulo); }
+td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--color-texto-exito); }
 
-/* --- Botón de Acción en Tabla --- */
 .detail-button {
-  padding: 0.5rem 1rem;
-  background-color: var(--color-primary);
-  color: white;
+  padding: 8px 16px;
+  background-color: var(--color-primario);
+  color: var(--color-texto-titulo);
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
 }
-
-.detail-button:hover {
-  background-color: var(--color-primary-dark);
-}
-
-/* --- Mensajes de Estado --- */
-.loading-message, .error-message, .empty-message {
-  text-align: center;
-  padding: 3rem;
-  font-size: 1.2rem;
-  color: #777;
-}
-.error-message {
-  color: #d94848;
-}
-
-/* --- Responsividad --- */
-@media (max-width: 767px) {
-  .vista-container {
-    padding: 1.5rem 1rem;
-    border-radius: 0; /* Opcional: elimina el borde redondeado en móviles */
-  }
-}
+.detail-button:hover { background-color: var(--color-primario-oscuro); }

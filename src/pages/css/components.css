@@ -56,6 +56,48 @@
   box-shadow: 0 0 0 3px rgba(160, 196, 255, 0.5);
 }
 
+/* === Controles de Monto (VERSIÓN CORREGIDA) === */
+.monto-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.monto-controls button {
+  flex-shrink: 0;
+}
+
+.monto-input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-borde);
+  /* border-radius: 8px; */
+  padding-left: 0.75rem;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  flex-grow: 1;
+}
+
+.monto-input-container:focus-within {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 3px rgba(160, 196, 255, 0.5);
+}
+
+.monto-input-container span {
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.monto-input-container input {
+  background-color: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
+  padding: 12px 10px 12px 8px;
+  font-size: 1rem;
+  color: var(--color-texto-principal);
+}
+
 /* === Mensajes y Alertas === */
 .mensaje, .auth-message, .login-error {
   padding: 1rem;
@@ -80,55 +122,13 @@
   color: var(--color-texto-secundario);
 }
 
-/* Mensajes en tablas */
 .loading-message, .error-message, .empty-message {
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
   color: #777;
 }
+
 .error-message {
   color: var(--color-texto-peligro);
 }
-
-/* rules  */
-
-/* === Controles de Monto (Para formularios de factura) === */
-
-.monto-controls {
-  display: flex;
-  align-items: center; 
-  gap: 0.5rem;      
-}
-
-/* Contenedor que envuelve el símbolo '$' y el input */
-.monto-input-container {
-  display: flex;                 
-  align-items: center;           
-  border: 1px solid var(--color-borde);
-  border-radius: 8px;
-  padding-left: 0.75rem;          
-  background-color: #fff;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  
-  /* --- SOLUCIÓN AQUÍ --- */
-  flex-grow: 1; /* Esto hace que el contenedor del input se expanda */
-}
-
-/* Le quitamos el borde y fondo al input para que se integre al contenedor */
-.monto-input-container input {
-  border: none;
-  outline: none;
-  background-color: transparent;
-  padding-left: 0.5rem;
-  
-  /* --- Y AQUÍ --- */
-  width: 100%; /* El input debe ocupar el 100% de su contenedor (que ahora es más grande) */
-}
-
-/* Opcional: Evita que los botones se encojan */
-.monto-controls button {
-    flex-shrink: 0;
-}
-
-/* ... (el resto de tus estilos como :focus-within, etc.) */
