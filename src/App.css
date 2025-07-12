@@ -1,105 +1,96 @@
-/* src/pages/css/App.css */
+/* Para: App.js */
 
 :root {
-  --pastel-blue: #a7c7e7;
-  --pastel-green: #b9e3c6;
-  --pastel-pink: #f7c7d4;
-  --pastel-yellow: #fff3b0;
-  --pastel-purple: #d6c8ff;
-  --background: #fdfdfd;
-  --text-color: #444;
-  --nav-bg: #e8f0fe;
-  --nav-link: #5d5d5d;
-  --nav-link-hover: #2d2d2d;
-  --highlight: #aed9e0;
+  --color-primario: #a0c4ff;
+  --color-primario-oscuro: #8ab4f8;
+  --color-texto-titulo: #1c3d5a;
+  --color-peligro: #ffadad;
+  --color-peligro-oscuro: #ff9a9a;
+  --color-texto-peligro: #721c24;
+  
+  /* --- COLORES ACTUALIZADOS --- */
+  --color-exito: #dcd0ff;            /* Lila pastel para éxito */
+  --color-exito-oscuro: #c8b6ff;      /* Lila para hover */
+  --color-texto-exito: #493d6a;       /* Lila oscuro para texto */
+  
+  --color-fondo: #f8f9fa;
+  --color-superficie: #ffffff;
+  --color-borde: #e2e8f0;
+  --color-texto-principal: #2d3748;
+  --color-texto-secundario: #718096;
+  --sombra-suave: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--background);
-  color: var(--text-color);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--color-fondo);
+  color: var(--color-texto-principal);
 }
 
-nav {
-  background-color: var(--nav-bg);
+.app-nav {
+  background-color: var(--color-superficie);
   padding: 1rem 2rem;
+  box-shadow: var(--sombra-suave);
   display: flex;
-  flex-wrap: wrap;
+  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-nav h1 {
-margin: 0;
-font-size: 1.5rem;
-color: var(--pastel-purple);
-margin-right: 2rem;
-}
-
-nav a {
+.nav-links a {
   text-decoration: none;
-  color: var(--nav-link);
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  color: var(--color-texto-secundario);
+  font-weight: 500;
+  padding-bottom: 5px;
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
 }
 
-nav a:hover {
-  background-color: var(--highlight);
-  color: var(--nav-link-hover);
+.nav-links a:hover {
+  color: var(--color-primario);
 }
 
-hr {
+.nav-links a.active {
+  color: var(--color-texto-titulo);
+  font-weight: 700;
+  border-bottom-color: var(--color-primario);
+}
+
+.auth-button {
+  padding: 10px 18px;
   border: none;
-  border-top: 1px solid #ccc;
-  margin: 0;
-}
-
-h2 {
-  text-align: center;
-  color: var(--pastel-blue);
-  margin-top: 2rem;
-}
-
-.page-container {
-  max-width: 1000px;
-  margin: 2rem auto;
-  padding: 2rem;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
-}
-
-/* Puedes usar estas clases en tus páginas */
-.button {
-  background-color: var(--pastel-green);
-  border: none;
-  padding: 0.5rem 1.5rem;
   border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
-  color: #333;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease-in-out;
 }
 
-.button:hover {
-  background-color: var(--pastel-blue);
+.auth-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-input, select, textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  font-size: 1rem;
+.auth-button.login {
+  background-color: var(--color-primario);
+  color: var(--color-texto-titulo);
+}
+.auth-button.login:hover {
+  background-color: var(--color-primario-oscuro);
 }
 
-label {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  display: block;
-  color: #555;
+.auth-button.logout {
+  background-color: var(--color-peligro);
+  color: var(--color-texto-peligro);
+}
+.auth-button.logout:hover {
+  background-color: var(--color-peligro-oscuro);
+}
+
+@media (max-width: 768px) {
+  .app-nav {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
 }
