@@ -7,12 +7,9 @@
   --color-peligro: #ffadad;
   --color-peligro-oscuro: #ff9a9a;
   --color-texto-peligro: #721c24;
-  
-  /* --- COLORES ACTUALIZADOS --- */
   --color-exito: #dcd0ff;            /* Lila pastel para éxito */
   --color-exito-oscuro: #c8b6ff;      /* Lila para hover */
   --color-texto-exito: #493d6a;       /* Lila oscuro para texto */
-  
   --color-fondo: #f8f9fa;
   --color-superficie: #ffffff;
   --color-borde: #e2e8f0;
@@ -72,21 +69,17 @@ body {
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.auth-button.login {
-  background-color: var(--color-primario);
-  color: var(--color-texto-titulo);
+/* --- BOTONES DE SESIÓN UNIFICADOS A LILA --- */
+.auth-button.login,
+.auth-button.logout {
+  background-color: var(--color-exito);
+  color: var(--color-texto-exito);
 }
-.auth-button.login:hover {
-  background-color: var(--color-primario-oscuro);
+.auth-button.login:hover,
+.auth-button.logout:hover {
+  background-color: var(--color-exito-oscuro);
 }
 
-.auth-button.logout {
-  background-color: var(--color-peligro);
-  color: var(--color-texto-peligro);
-}
-.auth-button.logout:hover {
-  background-color: var(--color-peligro-oscuro);
-}
 
 @media (max-width: 768px) {
   .app-nav {
