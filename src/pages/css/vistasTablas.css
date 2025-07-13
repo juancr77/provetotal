@@ -15,22 +15,21 @@
   padding-bottom: 1rem;
 }
 
-/* --- BOTÓN DE EXCEL CON COLOR VERDE --- */
 .excel-button {
   display: block;
   margin-left: auto;
   margin-bottom: 1.5rem;
   padding: 12px 20px;
-  background-color: #bde4cb; /* Verde pastel original */
-  color: #1e4620;            /* Texto verde oscuro */
+  background-color: #bde4cb;
+  color: #1e4620;
   border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
 }
-.excel-button:hover { 
-  background-color: #a3d6b4; /* Verde más oscuro para hover */
+.excel-button:hover {
+  background-color: #a3d6b4;
 }
 
 .table-container {
@@ -73,7 +72,7 @@ td[data-status="Pendiente"] { background-color: var(--color-peligro); color: var
 td[data-status="Recibida"] { background-color: #fff4d5; color: #6d5815; }
 td[data-status="Con solventación"] { background-color: #ffdceb; color: #6a2444; }
 td[data-status="En contabilidad"] { background-color: var(--color-primario); color: var(--color-texto-titulo); }
-td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--color-texto-exito); } /* Este sigue siendo lila */
+td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--color-texto-exito); }
 
 .detail-button {
   padding: 8px 16px;
@@ -86,3 +85,14 @@ td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--co
   transition: background-color 0.2s;
 }
 .detail-button:hover { background-color: var(--color-primario-oscuro); }
+
+/* --- ESTILO ESPECÍFICO PARA LA TABLA DE GASTOS POR MES --- */
+.reporte-mes-page th:nth-child(5) {
+  background-color: #ffe8cc;
+}
+
+.reporte-mes-page tbody td:nth-child(5) {
+  background-color: #fff4e6;
+  font-weight: 600;
+  color: #7c5c2a;
+}
