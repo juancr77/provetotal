@@ -12,6 +12,7 @@ import GastosPorProveedor from './pages/GastosPorProveedor';
 import GastosPorMes from './pages/GastosPorMes';
 import RegistroProveedor from './pages/RegistroProveedor';
 import LoginPage from './pages/LoginPage';
+import LimiteMes from './pages/LimiteMes';
 
 // Importación de CSS
 import './App.css';
@@ -41,6 +42,7 @@ function Navigation() {
         <NavLink to="/registrar-factura">Registrar Factura</NavLink>
         <NavLink to="/gastos-proveedor">Reporte Proveedor</NavLink>
         <NavLink to="/gastos-mes">Reporte Mes</NavLink>
+        <NavLink to="/limite-mes">Límites Mensuales</NavLink>
       </div>
 
       <div className="nav-user-section">
@@ -76,6 +78,7 @@ function App() {
               <Route path="/factura/:facturaId" element={<DetalleFactura />} />
               <Route path="/gastos-proveedor" element={<GastosPorProveedor />} />
               <Route path="/gastos-mes" element={<GastosPorMes />} />
+              <Route path="/limite-mes" element={<LimiteMes />} /> 
               <Route path="/" element={<VerFacturas />} />
             </Routes>
           </main>
