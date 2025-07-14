@@ -4,11 +4,12 @@ import { db } from '../firebase';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
+import { useAuth } from '../auth/AuthContext';
 import './css/DetalleVista.css';
+import './css/Formulario.css'; // Importamos el CSS del formulario para el modo de edición
 
 function DetalleProveedor() {
-  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
+  const { currentUser } = useAuth();
   const { proveedorId } = useParams();
   const navigate = useNavigate();
 
@@ -26,12 +27,14 @@ function DetalleProveedor() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setProveedor(data);
-          setFormData(data);
+          // --- MODIFICACIÓN: Aseguramos que el estado del formulario incluya el límite ---
+          setFormData({ ...data, limiteGasto: String(data.limiteGasto || '0') });
         } else {
           setError("No se encontró el proveedor.");
         }
       } catch (err) {
         setError("Error al cargar los datos del proveedor.");
+        console.error(err);
       } finally {
         setCargando(false);
       }
@@ -44,25 +47,45 @@ function DetalleProveedor() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- INICIO: FUNCIONES PARA EL CAMPO DE MONTO ---
+  const MIN_LIMITE = 0;
+  const ajustarMonto = (ajuste) => {
+    const montoActual = parseFloat(formData.limiteGasto) || 0;
+    let nuevoMonto = montoActual + ajuste;
+    nuevoMonto = Math.max(MIN_LIMITE, nuevoMonto);
+    setFormData(prev => ({ ...prev, limiteGasto: String(nuevoMonto) }));
+  };
+
+  const handleMontoChange = (e) => {
+    const valor = e.target.value;
+    if (valor === '' || (!isNaN(parseFloat(valor)) && parseFloat(valor) >= MIN_LIMITE)) {
+        setFormData(prev => ({ ...prev, limiteGasto: valor }));
+    }
+  };
+  // --- FIN: FUNCIONES PARA EL CAMPO DE MONTO ---
+
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para actualizar un proveedor.");
-    }
+    if (!currentUser) return alert("Necesitas autenticarte para actualizar.");
+    
     try {
       const docRef = doc(db, "proveedores", proveedorId);
-      await updateDoc(docRef, formData);
-      setProveedor(prev => ({ ...prev, ...formData }));
+      // --- MODIFICACIÓN: Se asegura que el límite se guarde como número ---
+      const dataToUpdate = { 
+        ...formData, 
+        limiteGasto: parseFloat(formData.limiteGasto) || 0
+      };
+      await updateDoc(docRef, dataToUpdate);
+      setProveedor(dataToUpdate);
       setIsEditing(false);
     } catch (err) {
       setError("Error al actualizar los datos del proveedor.");
+      console.error(err);
     }
   };
 
   const handleDelete = async () => {
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para eliminar un proveedor.");
-    }
+    if (!currentUser) return alert("Necesitas autenticarte para eliminar.");
     if (window.confirm("¿Estás seguro de que quieres eliminar este proveedor?")) {
       try {
         await deleteDoc(doc(db, "proveedores", proveedorId));
@@ -74,13 +97,10 @@ function DetalleProveedor() {
   };
 
   const generarPDF = async () => {
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para imprimir detalles.");
-    }
+    if (!currentUser) return alert("Necesitas autenticarte para imprimir detalles.");
     if (!proveedor) return;
     const docPDF = new jsPDF('p', 'pt', 'letter');
     const pdfWidth = docPDF.internal.pageSize.getWidth();
-
     try {
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBlob = await response.blob();
@@ -96,12 +116,14 @@ function DetalleProveedor() {
     docPDF.setFontSize(18);
     docPDF.setTextColor('#2A4B7C');
     docPDF.text("Información del Proveedor", pdfWidth / 2, contentY, { align: 'center' });
-
+    
+    // --- MODIFICACIÓN: Se añade 'Límite de Gasto' a los datos del PDF ---
     const tableData = [
       ['ID Proveedor', proveedor.idProveedor],
       ['Nombre(s)', proveedor.nombre],
       ['Apellido Paterno', proveedor.apellidoPaterno],
       ['Apellido Materno', proveedor.apellidoMaterno || 'N/A'],
+      ['Límite de Gasto', (proveedor.limiteGasto || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })],
       ['Fecha de Registro', proveedor.fechaRegistro.toDate().toLocaleDateString()]
     ];
 
@@ -134,6 +156,9 @@ function DetalleProveedor() {
                 <dd>{proveedor.apellidoPaterno}</dd>
                 <dt>Apellido Materno:</dt>
                 <dd>{proveedor.apellidoMaterno || 'N/A'}</dd>
+                {/* --- MODIFICACIÓN: Se muestra el Límite de Gasto en la vista --- */}
+                <dt>Límite de Gasto:</dt>
+                <dd>{(proveedor.limiteGasto || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</dd>
                 <dt>Fecha de Registro:</dt>
                 <dd>{proveedor.fechaRegistro.toDate().toLocaleDateString()}</dd>
               </dl>
@@ -146,7 +171,8 @@ function DetalleProveedor() {
           </div>
         </>
       ) : (
-        <form className="detalle-form" onSubmit={handleUpdate}>
+        <form className="detalle-form registro-form" onSubmit={handleUpdate}>
+          {/* Los campos existentes se mantienen */}
           <div className="form-group">
             <label htmlFor="idProveedor">ID Proveedor:</label>
             <input id="idProveedor" type="text" value={formData.idProveedor || ''} disabled readOnly />
@@ -163,6 +189,31 @@ function DetalleProveedor() {
             <label htmlFor="apellidoMaterno">Apellido Materno:</label>
             <input id="apellidoMaterno" type="text" name="apellidoMaterno" value={formData.apellidoMaterno || ''} onChange={handleChange} />
           </div>
+
+          {/* --- MODIFICACIÓN: Se añade el campo para editar el Límite de Gasto --- */}
+          <div className="monto-group full-width">
+            <label htmlFor="limiteGasto">Límite de Gasto:</label>
+            <div className="monto-controls">
+              <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+              <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+              <div className="monto-input-container">
+                <span>$</span>
+                <input 
+                  type="number"
+                  id="limiteGasto"
+                  name="limiteGasto"
+                  value={formData.limiteGasto || ''}
+                  onChange={handleMontoChange}
+                  min={MIN_LIMITE}
+                  step="0.01"
+                />
+              </div>
+              <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+              <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+            </div>
+          </div>
+          {/* --- FIN DE LA MODIFICACIÓN --- */}
+
           <div className="detalle-acciones">
             <button className="btn btn-editar" type="submit">✅ Guardar Cambios</button>
             <button className="btn btn-secundario" type="button" onClick={() => setIsEditing(false)}>❌ Cancelar</button>

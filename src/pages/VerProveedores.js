@@ -1,30 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, getDocs } from "firebase/firestore";
+// SE AGREGA 'query' y 'orderBy' para ordenar la lista
+import { collection, getDocs, query, orderBy } from "firebase/firestore"; 
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
+import { useAuth } from '../auth/AuthContext';
 import './css/vistasTablas.css';
+// Se agregaron estas importaciones que antes no estaban en este archivo específico
 import './css/main.css';
 import './css/pages.css';
 import './css/components.css';
 
 function VerProveedores() {
-  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
+  const { currentUser } = useAuth();
   const [proveedores, setProveedores] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // La función para obtener datos solo se ejecuta si hay un usuario autenticado.
     const obtenerProveedores = async () => {
       if (!currentUser) {
         setCargando(false);
         return;
       }
       try {
-        const querySnapshot = await getDocs(collection(db, "proveedores"));
+        const proveedoresRef = collection(db, "proveedores");
+        // SE AÑADIÓ ORDENAMIENTO para que la lista aparezca alfabéticamente por nombre
+        const q = query(proveedoresRef, orderBy("nombre")); 
+        const querySnapshot = await getDocs(q);
         const listaProveedores = querySnapshot.docs.map(doc => ({
           ...doc.data(),
           id: doc.id
@@ -39,17 +43,16 @@ function VerProveedores() {
     };
 
     obtenerProveedores();
-  }, [currentUser]); // Se añade currentUser como dependencia
+  }, [currentUser]);
 
   const generateExcel = async () => {
-    // Se añade la protección a la función
     if (!currentUser) {
       return alert("Necesitas autenticarte para generar reportes.");
     }
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Listado de Proveedores", {
-        views: [{ state: 'frozen', ySplit: 7 }]
+        views: [{ state: 'frozen', ySplit: 6 }]
       });
 
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
@@ -61,7 +64,8 @@ function VerProveedores() {
       });
       
       const contentStartRow = 6;
-      worksheet.mergeCells(`A${contentStartRow}:E${contentStartRow}`);
+      // SE AJUSTÓ EL RANGO PARA LA NUEVA COLUMNA
+      worksheet.mergeCells(`A${contentStartRow}:F${contentStartRow}`);
       const titleCell = worksheet.getCell(`A${contentStartRow}`);
       titleCell.value = "Listado de Proveedores";
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -70,42 +74,30 @@ function VerProveedores() {
 
       const headerRow = worksheet.getRow(contentStartRow + 1);
       headerRow.height = 25;
-      headerRow.values = ['ID de Proveedor', 'Nombre(s)', 'Apellido Paterno', 'Apellido Materno', 'Fecha de Registro'];
+      // SE AÑADIÓ LA NUEVA COLUMNA "LÍMITE DE GASTO"
+      headerRow.values = ['ID de Proveedor', 'Nombre(s)', 'Apellido Paterno', 'Apellido Materno', 'Límite de Gasto', 'Fecha de Registro'];
       headerRow.eachCell((cell) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
         cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       });
 
       proveedores.forEach(p => {
+        // SE AÑADIÓ EL DATO DEL LÍMITE DE GASTO EN LA FILA
         worksheet.addRow([
           p.idProveedor,
           p.nombre,
           p.apellidoPaterno,
           p.apellidoMaterno || 'N/A',
+          p.limiteGasto || 0,
           p.fechaRegistro.toDate()
         ]);
       });
 
-      const columnCount = headerRow.cellCount;
-      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        if (rowNumber > contentStartRow + 1) {
-          for (let i = 1; i <= columnCount; i++) {
-            const cell = row.getCell(i);
-            cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
-              left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, 
-              right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
-            };
-            if (rowNumber % 2 === 0) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-            }
-          }
-        }
-      });
-      
-      worksheet.getColumn(5).numFmt = 'dd/mm/yyyy';
+      // SE AÑADIÓ FORMATO DE MONEDA A LA NUEVA COLUMNA
+      worksheet.getColumn(5).numFmt = '$#,##0.00';
+      worksheet.getColumn(6).numFmt = 'dd/mm/yyyy';
       worksheet.columns.forEach(column => { column.width = 25; });
       
       const buffer = await workbook.xlsx.writeBuffer();
@@ -119,7 +111,6 @@ function VerProveedores() {
 
   if (cargando) return <p className="loading-message">Cargando...</p>;
   
-  // --- LÓGICA DE VISUALIZACIÓN CONDICIONAL ---
   if (!currentUser) {
     return (
       <div className="vista-container">
@@ -129,7 +120,6 @@ function VerProveedores() {
     );
   }
 
-  // Este contenido solo se muestra si hay un usuario autenticado.
   return (
     <div className="vista-container">
       <h2>Lista de Proveedores Registrados</h2>
@@ -149,14 +139,16 @@ function VerProveedores() {
               <th>Nombre(s)</th>
               <th>Apellido Paterno</th>
               <th>Apellido Materno</th>
-              <th>Acciones</th>
+              {/* SE AÑADIÓ LA CABECERA DE LA NUEVA COLUMNA */}
+              <th className="cell-numeric limit-column-header">Límite de Gasto</th>
+              <th className="cell-center">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {error ? (
-              <tr><td colSpan="5" className="error-message">{error}</td></tr>
+              <tr><td colSpan="6" className="error-message">{error}</td></tr>
             ) : proveedores.length === 0 ? (
-              <tr><td colSpan="5" className="empty-message">No hay proveedores registrados.</td></tr>
+              <tr><td colSpan="6" className="empty-message">No hay proveedores registrados.</td></tr>
             ) : (
               proveedores.map(proveedor => (
                 <tr key={proveedor.id}>
@@ -164,7 +156,11 @@ function VerProveedores() {
                   <td>{proveedor.nombre}</td>
                   <td>{proveedor.apellidoPaterno}</td>
                   <td>{proveedor.apellidoMaterno || 'No especificado'}</td>
-                  <td>
+                  {/* SE AÑADIÓ LA CELDA PARA MOSTRAR EL LÍMITE */}
+                  <td className="limit-column-cell cell-numeric">
+                    {(proveedor.limiteGasto || 0).toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                  </td>
+                  <td className="cell-actions">
                     <Link to={`/proveedor/${proveedor.id}`}>
                       <button className="detail-button">Ver Detalle</button>
                     </Link>
