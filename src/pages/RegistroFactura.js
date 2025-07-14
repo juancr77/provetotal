@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db } from '../firebase.js';
 import { collection, getDocs, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
-
+import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/Formulario.css';
 
+// --- CORRECCIÓN ---
+// La función se mueve aquí, fuera y antes de que el componente la necesite.
 const getTodayDateString = () => {
   const today = new Date();
-  return today.toISOString().split('T')[0];
+  // Se aplica un ajuste por la zona horaria para que el input tipo 'date' muestre el día correcto.
+  const offset = today.getTimezoneOffset() * 60000;
+  const localDate = new Date(today.getTime() - offset);
+  return localDate.toISOString().split('T')[0];
 };
 
 function RegistroFactura() {
@@ -18,14 +23,14 @@ function RegistroFactura() {
   const [numeroFactura, setNumeroFactura] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
-  const [estatus, setEstatus] = useState('');
+  const [estatus, setEstatus] =useState('');
+  // Ahora esta línea funciona porque la función getTodayDateString ya está definida.
   const [fechaFactura, setFechaFactura] = useState(getTodayDateString());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
 
   useEffect(() => {
-    // La carga de proveedores solo se realiza si el usuario está autenticado
     const fetchProveedores = async () => {
       if (!currentUser) {
         setCargando(false);
@@ -100,6 +105,11 @@ function RegistroFactura() {
       setError("Todos los campos, excepto descripción, son obligatorios.");
       return;
     }
+    
+    // Se convierte la fecha del input (que está en formato YYYY-MM-DD) a un objeto Date de JavaScript.
+    // Esto evita problemas con las zonas horarias.
+    const [year, month, day] = fechaFactura.split('-').map(Number);
+    const fechaFacturaDate = new Date(year, month - 1, day);
 
     const nuevaFactura = {
       idProveedor,
@@ -108,12 +118,16 @@ function RegistroFactura() {
       descripcion: descripcion.trim(),
       monto: parseFloat(monto),
       estatus,
-      fechaFactura: new Date(fechaFactura),
+      fechaFactura: fechaFacturaDate,
       fechaRegistro: new Date()
     };
 
     try {
       await addDoc(collection(db, "facturas"), nuevaFactura);
+      
+      await recalcularTotalProveedor(nuevaFactura.idProveedor);
+      await recalcularTotalMes(nuevaFactura.fechaFactura);
+      
       setMensajeExito("Factura registrada con éxito.");
       setIdProveedor('');
       setNombreProveedor('');
@@ -132,7 +146,6 @@ function RegistroFactura() {
     return <p className="loading-message">Cargando...</p>;
   }
 
-  // Si no hay usuario, se muestra el mensaje de autenticación.
   if (!currentUser) {
     return (
       <div className="registro-factura-container">

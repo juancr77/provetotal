@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { db } from '../firebase';
+import { db } from '../firebase.js'; // <- RUTA CORREGIDA
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { useAuth } from '../auth/AuthContext'; // Se importa el hook de autenticación
+import { useAuth } from '../auth/AuthContext';
+import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js'; // <- RUTA CORREGIDA
 import './css/DetalleVista.css';
 
+// ... (El resto del código del archivo no cambia, es exactamente el mismo que te di antes)
+// ... (Para brevedad, no lo repito aquí, pero tú déjalo tal cual estaba)
+// El código completo y correcto se encuentra en la respuesta anterior, solo necesitas cambiar la línea de importación de arriba.
+// El resto del archivo permanece idéntico.
+
 function DetalleFactura() {
-  const { currentUser } = useAuth(); // Se obtiene el estado del usuario
+  const { currentUser } = useAuth();
   const { facturaId } = useParams();
   const navigate = useNavigate();
 
@@ -18,7 +24,14 @@ function DetalleFactura() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
-  const formatDateForInput = (date) => date.toISOString().split('T')[0];
+  const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = (`0${d.getMonth() + 1}`).slice(-2);
+    const day = (`0${d.getDate()}`).slice(-2);
+    return `${year}-${month}-${day}`;
+  };
 
   useEffect(() => {
     const fetchFactura = async () => {
@@ -27,7 +40,7 @@ function DetalleFactura() {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setFactura(data);
+          setFactura({ ...data, id: docSnap.id });
           setFormData({
             ...data,
             fechaFactura: formatDateForInput(data.fechaFactura.toDate()),
@@ -79,14 +92,44 @@ function DetalleFactura() {
     if (!currentUser) {
       return alert("Necesitas autenticarte para actualizar una factura.");
     }
+    
+    const oldProveedorId = factura.idProveedor;
+    const oldFecha = factura.fechaFactura.toDate();
+    
     try {
       const docRef = doc(db, "facturas", facturaId);
-      const dataToUpdate = { ...formData, monto: parseFloat(formData.monto), fechaFactura: new Date(formData.fechaFactura) };
+      
+      const [year, month, day] = formData.fechaFactura.split('-').map(Number);
+      const newFechaFactura = new Date(year, month - 1, day);
+      
+      const dataToUpdate = { 
+        ...formData, 
+        monto: parseFloat(formData.monto), 
+        fechaFactura: newFechaFactura
+      };
+      
       await updateDoc(docRef, dataToUpdate);
-      const updatedFactura = { ...dataToUpdate, fechaFactura: { toDate: () => new Date(dataToUpdate.fechaFactura) } };
+
+      await recalcularTotalProveedor(dataToUpdate.idProveedor);
+      if (oldProveedorId !== dataToUpdate.idProveedor) {
+          await recalcularTotalProveedor(oldProveedorId);
+      }
+      
+      await recalcularTotalMes(dataToUpdate.fechaFactura);
+      const newFecha = dataToUpdate.fechaFactura;
+      if (oldFecha.getMonth() !== newFecha.getMonth() || oldFecha.getFullYear() !== newFecha.getFullYear()) {
+          await recalcularTotalMes(oldFecha);
+      }
+      
+      const updatedFactura = { 
+        ...dataToUpdate, 
+        fechaFactura: { toDate: () => dataToUpdate.fechaFactura } 
+      };
       setFactura(updatedFactura);
       setIsEditing(false);
+
     } catch (err) {
+      console.error("Error al actualizar: ", err);
       setError("Error al actualizar la factura.");
     }
   };
@@ -97,7 +140,14 @@ function DetalleFactura() {
     }
     if (window.confirm("¿Estás seguro de que quieres eliminar esta factura?")) {
       try {
+        const proveedorIdParaActualizar = factura.idProveedor;
+        const fechaParaActualizar = factura.fechaFactura.toDate();
+
         await deleteDoc(doc(db, "facturas", facturaId));
+        
+        await recalcularTotalProveedor(proveedorIdParaActualizar);
+        await recalcularTotalMes(fechaParaActualizar);
+
         navigate('/ver-facturas');
       } catch (err) {
         setError("No se pudo eliminar la factura.");
@@ -106,13 +156,12 @@ function DetalleFactura() {
   };
 
   const generarPDF = async () => {
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para imprimir detalles.");
+    if (!currentUser || !factura) {
+        return alert("No se puede generar el PDF.");
     }
-    if (!factura) return;
     const docPDF = new jsPDF('p', 'pt', 'letter');
     const pdfWidth = docPDF.internal.pageSize.getWidth();
-
+  
     try {
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBlob = await response.blob();
@@ -123,16 +172,18 @@ function DetalleFactura() {
       docPDF.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
       URL.revokeObjectURL(imageUrl);
     } catch (error) { console.error("Error al cargar la imagen de cabecera:", error); }
-
+  
     const contentY = 40 + 88 + 40;
     docPDF.setFontSize(18);
     docPDF.setTextColor('#2A4B7C');
     docPDF.text("Detalles de la Factura", pdfWidth / 2, contentY, { align: 'center' });
+  
+    const fecha = factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : new Date(factura.fechaFactura);
 
     const tableData = [
       ['Proveedor', factura.nombreProveedor],
       ['Número de Factura', factura.numeroFactura],
-      ['Fecha', factura.fechaFactura.toDate().toLocaleDateString()],
+      ['Fecha', fecha.toLocaleDateString()],
       ['Descripción', factura.descripcion || 'N/A'],
       ['Monto', factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })],
       ['Estatus', factura.estatus]
@@ -142,7 +193,7 @@ function DetalleFactura() {
       'Pendiente': [255, 199, 206], 'Recibida': [255, 242, 204], 'Con solventación': [252, 221, 173],
       'En contabilidad': [221, 235, 247], 'Pagada': [198, 239, 206]
     };
-
+  
     autoTable(docPDF, {
       startY: contentY + 20,
       body: tableData,
