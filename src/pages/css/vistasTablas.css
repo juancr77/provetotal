@@ -6,7 +6,8 @@
   border-radius: 12px;
   box-shadow: var(--sombra-suave);
   margin: 2rem auto;
-  max-width: 1200px;
+  max-width: 95%; /* Se ajusta mejor a la pantalla */
+  width: 100%;
 }
 
 .vista-container h2 {
@@ -20,7 +21,7 @@
   margin-left: auto;
   margin-bottom: 1.5rem;
   padding: 12px 20px;
-  background-color: #1d6f42;
+  background-color: #1d6f42; /* Verde corporativo */
   color: white;
   border: none;
   border-radius: 8px;
@@ -49,7 +50,7 @@ th, td {
   text-align: left;
   border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
-  white-space: nowrap;
+  /* Se elimina 'white-space: nowrap' para permitir que el texto se ajuste */
 }
 
 tbody tr:last-child td {
@@ -67,6 +68,8 @@ th {
   text-transform: uppercase;
 }
 
+/* --- CLASES DE UTILIDAD PARA ALINEACIÓN --- */
+
 .cell-numeric {
   text-align: right;
 }
@@ -75,20 +78,52 @@ th {
   text-align: center;
 }
 
-td[data-status] {
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 16px;
+.cell-actions {
   text-align: center;
-  display: inline-block;
-  min-width: 120px;
 }
 
-td[data-status="Pendiente"] { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
-td[data-status="Recibida"] { background-color: #fff4d5; color: #6d5815; }
-td[data-status="Con solventación"] { background-color: #ffdceb; color: #6a2444; }
-td[data-status="En contabilidad"] { background-color: var(--color-primario); color: var(--color-texto-titulo); }
-td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--color-texto-exito); }
+/* --- ESTILOS DE ESTATUS (con colores más vivos) --- */
+
+span[data-status] {
+  display: inline-block;
+  min-width: 120px;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 0.85em;
+  text-align: center;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Rojo Fuerte */
+span[data-status="Pendiente"] { 
+  background-color: #e53e3e; 
+  color: white; 
+}
+
+/* Amarillo Intenso */
+span[data-status="Recibida"] { 
+  background-color: #facc15; /* Amarillo/Dorado más fuerte */
+  color: #422006; /* Texto oscuro para alto contraste */
+}
+
+/* Naranja */
+span[data-status="Con solventación"] { 
+  background-color: #ed8936; 
+  color: white; 
+}
+
+/* Azul */
+span[data-status="En contabilidad"] { 
+  background-color: #4299e1; 
+  color: white; 
+}
+
+/* Verde */
+span[data-status="Pagada"] { 
+  background-color: #48bb78; 
+  color: white; 
+}
 
 .detail-button {
   padding: 8px 16px;
@@ -100,10 +135,11 @@ td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--co
   font-weight: 500;
   transition: background-color 0.2s;
 }
-.detail-button:hover { background-color: var(--color-primario-oscuro); }
+.detail-button:hover {
+  background-color: var(--color-primario-oscuro); 
+}
 
-/* --- ESTILOS DE ESTADO Y LÍMITE --- */
-
+/* --- Clases para el estado del monto (Reportes de Gastos) --- */
 td.status-green {
   background-color: #d4edda !important;
   color: #155724 !important;
@@ -111,8 +147,8 @@ td.status-green {
 }
 
 td.status-amber {
-  background-color: #fff3cd !important;
-  color: #856404 !important;
+  background-color: #fef08a !important; /* Amarillo pastel más vivo */
+  color: #854d0e !important; /* Texto oscuro para alto contraste */
   font-weight: bold;
 }
 
@@ -122,11 +158,11 @@ td.status-red {
   font-weight: bold;
 }
 
+/* Clase especial para resaltar la columna de Límite */
 .limit-column-header {
   background-color: #ffe8cc !important;
 }
 
-/* --- MODIFICACIÓN AQUÍ --- */
 .limit-column-cell {
   background-color: #fff4e6 !important;
   font-weight: bold;
