@@ -102,8 +102,7 @@ td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--co
 }
 .detail-button:hover { background-color: var(--color-primario-oscuro); }
 
-
-/* --- ESTILOS DE ESTADO Y LÍMITE (ACTUALIZADOS) --- */
+/* --- ESTILOS DE ESTADO Y LÍMITE --- */
 
 td.status-green {
   background-color: #d4edda !important;
@@ -123,13 +122,13 @@ td.status-red {
   font-weight: bold;
 }
 
-/* ESTILO PARA LA COLUMNA DE LÍMITE (APLICA A AMBAS TABLAS) */
 .limit-column-header {
-  background-color: #ffe8cc !important; /* Color naranja pastel para encabezado */
+  background-color: #ffe8cc !important;
 }
 
+/* --- MODIFICACIÓN AQUÍ --- */
 .limit-column-cell {
-  background-color: #fff4e6 !important; /* Color naranja pastel más claro para celda */
-  font-weight: 600;
-  color: #7c5c2a;
+  background-color: #fff4e6 !important;
+  font-weight: bold;
+  color: #721c24 !important; /* Color solicitado */
 }

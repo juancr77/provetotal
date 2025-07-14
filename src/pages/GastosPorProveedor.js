@@ -28,7 +28,6 @@ function GastosPorProveedor() {
       try {
         const facturasSnapshot = await getDocs(collection(db, "facturas"));
         const proveedoresSnapshot = await getDocs(collection(db, "proveedores"));
-
         const facturas = facturasSnapshot.docs.map(doc => doc.data());
 
         const limitesProveedor = {};
@@ -86,8 +85,8 @@ function GastosPorProveedor() {
         red: 'FFF8D7DA',
         header: 'FF2A4B7C',
         headerText: 'FFFFFFFF',
-        limitCell: 'FFFFF4E6', // Naranja pastel claro
-        limitHeader: 'FFE2E8F0' // Gris claro
+        limitCell: 'FFFFF4E6',
+        limitText: 'FF721C24' // --- Color de texto solicitado
       };
 
       worksheet.addRow([`Totales por ${reportType}`]).font = { size: 16, bold: true };
@@ -101,7 +100,6 @@ function GastosPorProveedor() {
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
 
-        // Aplicar color especial al encabezado de la columna de límite
         if (colNumber === 5) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitHeader } };
           cell.font = { bold: true, color: { argb: 'FF000000' } };
@@ -110,15 +108,18 @@ function GastosPorProveedor() {
       
       gastos.forEach(gasto => {
         const row = worksheet.addRow([gasto.idProveedor, gasto.nombre, gasto.conteo, gasto.total, gasto.limite]);
-
+        
         const montoCell = row.getCell(4);
         const limiteCell = row.getCell(5);
 
         montoCell.numFmt = '$#,##0.00';
         limiteCell.numFmt = '$#,##0.00';
         
-        // Color de fondo fijo para la celda de límite
+        // --- INICIO DE MODIFICACIÓN EXCEL ---
+        // Estilo para la celda de límite
         limiteCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitCell } };
+        limiteCell.font = { bold: true, color: { argb: colors.limitText } }; // Aplicar color y negrita
+        // --- FIN DE MODIFICACIÓN EXCEL ---
 
         // Lógica de color condicional para Monto Total
         if (gasto.limite && gasto.limite > 0) {
@@ -137,16 +138,13 @@ function GastosPorProveedor() {
       
       const buffer = await workbook.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Reporte_Gastos_por_${reportType}.xlsx`);
-
     } catch (error) {
       console.error("Error al generar el archivo Excel:", error);
-      alert("No se pudo generar el archivo de Excel. Revisa la consola para más detalles.");
+      alert("No se pudo generar el archivo de Excel.");
     }
   };
 
-  if (cargando) {
-    return <p className="loading-message">Calculando gastos por proveedor...</p>;
-  }
+  if (cargando) return <p className="loading-message">Calculando gastos por proveedor...</p>;
 
   if (!currentUser) {
     return (
@@ -172,7 +170,7 @@ function GastosPorProveedor() {
               <th>Nombre del Proveedor</th>
               <th className="cell-numeric">Nº de Facturas</th>
               <th className="cell-numeric">Monto Total</th>
-              {/* Se añade la clase para el estilo de la cabecera del límite */}
+              {/* Se añade clase para el estilo de la cabecera del límite */}
               <th className="cell-numeric limit-column-header">Límite de Gasto</th>
             </tr>
           </thead>
