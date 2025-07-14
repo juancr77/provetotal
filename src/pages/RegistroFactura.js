@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase.js';
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, getDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
 import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/Formulario.css';
 
-// --- CORRECCIÓN ---
-// La función se mueve aquí, fuera y antes de que el componente la necesite.
 const getTodayDateString = () => {
   const today = new Date();
-  // Se aplica un ajuste por la zona horaria para que el input tipo 'date' muestre el día correcto.
   const offset = today.getTimezoneOffset() * 60000;
   const localDate = new Date(today.getTime() - offset);
   return localDate.toISOString().split('T')[0];
@@ -23,12 +20,13 @@ function RegistroFactura() {
   const [numeroFactura, setNumeroFactura] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [monto, setMonto] = useState('');
-  const [estatus, setEstatus] =useState('');
-  // Ahora esta línea funciona porque la función getTodayDateString ya está definida.
+  const [estatus, setEstatus] = useState('');
   const [fechaFactura, setFechaFactura] = useState(getTodayDateString());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
+
+  const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   useEffect(() => {
     const fetchProveedores = async () => {
@@ -67,7 +65,7 @@ function RegistroFactura() {
   };
 
   const MIN_MONTO = 1;
-  const MAX_MONTO = 5000000;
+  const MAX_MONTO = 30000000;
 
   const ajustarMonto = (ajuste) => {
     const montoActual = parseFloat(monto) || 0;
@@ -106,29 +104,88 @@ function RegistroFactura() {
       return;
     }
     
-    // Se convierte la fecha del input (que está en formato YYYY-MM-DD) a un objeto Date de JavaScript.
-    // Esto evita problemas con las zonas horarias.
+    const montoNumerico = parseFloat(monto);
     const [year, month, day] = fechaFactura.split('-').map(Number);
     const fechaFacturaDate = new Date(year, month - 1, day);
 
-    const nuevaFactura = {
-      idProveedor,
-      nombreProveedor,
-      numeroFactura,
-      descripcion: descripcion.trim(),
-      monto: parseFloat(monto),
-      estatus,
-      fechaFactura: fechaFacturaDate,
-      fechaRegistro: new Date()
-    };
-
     try {
+      // --- INICIO DE LA LÓGICA DE VALIDACIÓN ---
+
+      // 1. OBTENER DATOS Y LÍMITE DEL PROVEEDOR
+      const proveedorSeleccionado = proveedores.find(p => p.idProveedor === idProveedor);
+      const limiteProveedor = proveedorSeleccionado?.limiteGasto || 0;
+      
+      const totalProveedorDocRef = doc(db, "totalProveedor", idProveedor);
+      const totalProveedorSnap = await getDoc(totalProveedorDocRef);
+      const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
+      const nuevoTotalProveedor = totalProveedorActual + montoNumerico;
+
+      // 2. OBTENER DATOS Y LÍMITE DEL MES
+      const mesIndex = fechaFacturaDate.getMonth(); // 0 para Enero, 1 para Febrero...
+      const anio = fechaFacturaDate.getFullYear();
+      
+      // El ID del documento de límite de mes es el índice (0-11)
+      const limiteMesDocRef = doc(db, "limiteMes", String(mesIndex));
+      const limiteMesSnap = await getDoc(limiteMesDocRef);
+      const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
+      
+      // El ID del documento del total del mes es 'AÑO-MES_INDEX' (ej: "2024-06")
+      // --- CORRECCIÓN CLAVE AQUÍ ---
+      const totalMesDocId = `${anio}-${String(mesIndex).padStart(2, '0')}`;
+      const totalMesDocRef = doc(db, "totalMes", totalMesDocId);
+      const totalMesSnap = await getDoc(totalMesDocRef);
+      const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
+      const nuevoTotalMes = totalMesActual + montoNumerico;
+
+      // 3. VERIFICACIÓN DE LÍMITES (BLOQUEO)
+      if (limiteProveedor > 0 && nuevoTotalProveedor > limiteProveedor) {
+        setError(`Límite de gasto para el proveedor "${nombreProveedor}" excedido. Límite: ${limiteProveedor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}. Gasto actual: ${totalProveedorActual.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
+        return; // Detiene el proceso
+      }
+      
+      if (limiteMes > 0 && nuevoTotalMes > limiteMes) {
+        setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido. Límite: ${limiteMes.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}. Gasto actual: ${totalMesActual.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
+        return; // Detiene el proceso
+      }
+
+      // 4. VERIFICACIÓN DE ADVERTENCIAS (95%)
+      const advertencias = [];
+      if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95) && nuevoTotalProveedor <= limiteProveedor) {
+        advertencias.push(`- Se está acercando al límite de gasto del proveedor "${nombreProveedor}".`);
+      }
+      if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95) && nuevoTotalMes <= limiteMes) {
+        advertencias.push(`- Se está acercando al límite de gasto para el mes de ${nombresMeses[mesIndex]}.`);
+      }
+      
+      if (advertencias.length > 0) {
+        // Se usa window.confirm para dar la opción de continuar o cancelar
+        const continuar = window.confirm("ADVERTENCIA:\n\n" + advertencias.join('\n') + "\n\n¿Desea continuar de todos modos?");
+        if (!continuar) {
+          return; // El usuario canceló, no se registra la factura.
+        }
+      }
+      
+      // --- FIN DE LA LÓGICA DE VALIDACIÓN ---
+
+      // Si todas las validaciones pasan, se crea la factura
+      const nuevaFactura = {
+        idProveedor,
+        nombreProveedor,
+        numeroFactura,
+        descripcion: descripcion.trim(),
+        monto: montoNumerico,
+        estatus,
+        fechaFactura: fechaFacturaDate,
+        fechaRegistro: new Date()
+      };
+
       await addDoc(collection(db, "facturas"), nuevaFactura);
       
       await recalcularTotalProveedor(nuevaFactura.idProveedor);
       await recalcularTotalMes(nuevaFactura.fechaFactura);
       
       setMensajeExito("Factura registrada con éxito.");
+      // Limpiar el formulario
       setIdProveedor('');
       setNombreProveedor('');
       setNumeroFactura('');
@@ -136,6 +193,7 @@ function RegistroFactura() {
       setMonto('');
       setEstatus('');
       setFechaFactura(getTodayDateString());
+
     } catch (err) {
       console.error("Error al registrar la factura: ", err);
       setError("No se pudo registrar la factura. Inténtalo de nuevo.");
@@ -163,14 +221,14 @@ function RegistroFactura() {
           <label htmlFor="idProveedor">ID del Proveedor:</label>
           <select id="idProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
             <option value="">-- Seleccione por ID --</option>
-            {proveedores.map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.idProveedor}</option>))}
+            {proveedores.map(p => (<option key={p.id} value={p.idProveedor}>{p.idProveedor}</option>))}
           </select>
         </div>
         <div className="form-group">
           <label htmlFor="nombreProveedor">Nombre del Proveedor:</label>
           <select id="nombreProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
             <option value="">-- Seleccione por Nombre --</option>
-            {[...proveedores].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto)).map(p => (<option key={p.idProveedor} value={p.idProveedor}>{p.nombreCompleto}</option>))}
+            {[...proveedores].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto)).map(p => (<option key={p.id} value={p.idProveedor}>{p.nombreCompleto}</option>))}
           </select>
         </div>
         <div className="form-group">
@@ -192,8 +250,8 @@ function RegistroFactura() {
             <option value="Pagada">Pagada</option>
           </select>
         </div>
-        <div className="monto-group">
-          <label htmlFor="monto">Monto:</label>
+        <div className="monto-group full-width">
+          <label htmlFor="limiteGasto">Monto:</label>
           <div className="monto-controls">
             <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
             <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
