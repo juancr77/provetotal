@@ -21,7 +21,9 @@ function GastosPorMes() {
       try {
         const facturasSnapshot = await getDocs(collection(db, "facturas"));
         const limitesSnapshot = await getDocs(collection(db, "limiteMes"));
+
         const facturas = facturasSnapshot.docs.map(doc => doc.data());
+
         const limitesData = {};
         limitesSnapshot.forEach(doc => {
           const data = doc.data();
@@ -67,8 +69,19 @@ function GastosPorMes() {
     try {
         const workbook = new ExcelJS.Workbook();
         const worksheet = workbook.addWorksheet(reportType, {
-            views: [{ state: 'frozen', ySplit: 2 }]
+            views: [{ state: 'frozen', ySplit: 6 }] // Ajustamos el split para la nueva posición del título
         });
+
+        // --- INICIO DE CÓDIGO AÑADIDO: IMAGEN ---
+        const response = await fetch('https://i.imgur.com/5mavo8r.png');
+        const imageBuffer = await response.arrayBuffer();
+        const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
+        // Se coloca la imagen en las primeras filas
+        worksheet.addImage(imageId, {
+            tl: { col: 0, row: 0 },
+            ext: { width: 350, height: 88 }
+        });
+        // --- FIN DE CÓDIGO AÑADIDO: IMAGEN ---
 
         const colors = {
             green: 'FFD4EDDA',
@@ -78,42 +91,48 @@ function GastosPorMes() {
             headerText: 'FFFFFFFF',
             limitHeader: 'FFE2E8F0',
             limitCell: 'FFFFF4E6',
-            limitText: 'FF721C24' // --- Color de texto solicitado
+            limitText: 'FF721C24'
         };
 
-        worksheet.addRow([`Reporte de Gastos por ${reportType}`]).font = { size: 16, bold: true };
-        worksheet.mergeCells('A1:E1');
-        worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+        const contentStartRow = 6; // La fila donde comienza el título, después de la imagen
+        worksheet.mergeCells(`A${contentStartRow}:E${contentStartRow}`);
+        const titleCell = worksheet.getCell(`A${contentStartRow}`);
+        titleCell.value = `Reporte de Gastos por ${reportType}`;
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
+        worksheet.getRow(contentStartRow).height = 30;
+
+        const headerRow = worksheet.getRow(contentStartRow + 1);
+        headerRow.height = 25;
+        headerRow.values = ['Mes', 'Año', 'Nº de Facturas', 'Monto Total', 'Límite del Mes'];
         
-        const headerRow = worksheet.addRow(['Mes', 'Año', 'Nº de Facturas', 'Monto Total', 'Límite del Mes']);
         headerRow.eachCell((cell, colNumber) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.header } };
             cell.font = { bold: true, color: { argb: colors.headerText } };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-            if (colNumber === 5) {
+            
+            if (colNumber === 5) { // Estilo para la cabecera de la columna 'Límite'
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitHeader } };
                 cell.font = { bold: true, color: { argb: 'FF000000' } };
             }
         });
         
         gastos.forEach(gasto => {
-            const row = worksheet.addRow([nombresMeses[gasto.mes], gasto.anio, gasto.conteo, gasto.total, gasto.limite]);
-
+            const row = worksheet.addRow([
+              nombresMeses[gasto.mes], gasto.anio, gasto.conteo, gasto.total, gasto.limite
+            ]);
+            
             const montoCell = row.getCell(4);
             const limiteCell = row.getCell(5);
 
             montoCell.numFmt = '$#,##0.00';
             limiteCell.numFmt = '$#,##0.00';
             
-            // --- INICIO DE MODIFICACIÓN EXCEL ---
-            // Estilo para la celda de límite
             limiteCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitCell } };
-            limiteCell.font = { bold: true, color: { argb: colors.limitText } }; // Aplicar color y negrita
-            // --- FIN DE MODIFICACIÓN EXCEL ---
+            limiteCell.font = { bold: true, color: { argb: colors.limitText } };
 
-            // Lógica de color condicional para Monto Total
-            if (gasto.limite && gasto.limite > 0) {
+            if (gasto.limite > 0) {
                 const porcentaje = (gasto.total / gasto.limite) * 100;
                 let color = '';
                 if (porcentaje > 90) color = colors.red;
@@ -121,7 +140,7 @@ function GastosPorMes() {
                 else color = colors.green;
                 
                 if (color) {
-                    montoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+                    montoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color }};
                 }
             }
         });
@@ -154,6 +173,7 @@ function GastosPorMes() {
       <button onClick={() => generateExcel('Mes')} disabled={gastos.length === 0} className="excel-button">
         Generar Excel
       </button>
+
       <div className="table-container">
         <table>
           <thead>

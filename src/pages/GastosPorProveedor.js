@@ -77,8 +77,22 @@ function GastosPorProveedor() {
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(reportType, {
-        views: [{ state: 'frozen', ySplit: 2 }]
+        views: [{ state: 'frozen', ySplit: 6 }] // Ajustado para la imagen
       });
+
+      // --- INICIO DE CÓDIGO AÑADIDO: IMAGEN ---
+      const response = await fetch('https://i.imgur.com/5mavo8r.png');
+      const imageBuffer = await response.arrayBuffer();
+      const imageId = workbook.addImage({
+        buffer: imageBuffer,
+        extension: 'png',
+      });
+      worksheet.addImage(imageId, {
+        tl: { col: 0, row: 0 },
+        ext: { width: 350, height: 88 }
+      });
+      // --- FIN DE CÓDIGO AÑADIDO: IMAGEN ---
+
       const colors = {
         green: 'FFD4EDDA',
         amber: 'FFFFF3CD',
@@ -86,23 +100,29 @@ function GastosPorProveedor() {
         header: 'FF2A4B7C',
         headerText: 'FFFFFFFF',
         limitCell: 'FFFFF4E6',
-        limitText: 'FF721C24' // --- Color de texto solicitado
+        limitText: 'FF721C24'
       };
+      
+      const contentStartRow = 6;
+      worksheet.mergeCells(`A${contentStartRow}:E${contentStartRow}`);
+      const titleCell = worksheet.getCell(`A${contentStartRow}`);
+      titleCell.value = `Totales por ${reportType}`;
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
+      worksheet.getRow(contentStartRow).height = 30;
 
-      worksheet.addRow([`Totales por ${reportType}`]).font = { size: 16, bold: true };
-      worksheet.mergeCells('A1:E1');
-      worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
-
-      const headerRow = worksheet.addRow(['ID Proveedor', 'Nombre', 'Nº de Facturas', 'Monto Total', 'Límite de Gasto']);
+      const headerRow = worksheet.getRow(contentStartRow + 1);
+      headerRow.height = 25;
+      headerRow.values = ['ID Proveedor', 'Nombre', 'Nº de Facturas', 'Monto Total', 'Límite de Gasto'];
       headerRow.eachCell((cell, colNumber) => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.header } };
         cell.font = { bold: true, color: { argb: colors.headerText } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
         cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
 
-        if (colNumber === 5) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitHeader } };
-          cell.font = { bold: true, color: { argb: 'FF000000' } };
+        if (colNumber === 5) { // Estilo para la cabecera de la columna 'Límite'
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E8F0' } };
+            cell.font = { bold: true, color: { argb: 'FF000000' } };
         }
       });
       
@@ -115,13 +135,9 @@ function GastosPorProveedor() {
         montoCell.numFmt = '$#,##0.00';
         limiteCell.numFmt = '$#,##0.00';
         
-        // --- INICIO DE MODIFICACIÓN EXCEL ---
-        // Estilo para la celda de límite
         limiteCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.limitCell } };
-        limiteCell.font = { bold: true, color: { argb: colors.limitText } }; // Aplicar color y negrita
-        // --- FIN DE MODIFICACIÓN EXCEL ---
+        limiteCell.font = { bold: true, color: { argb: colors.limitText } };
 
-        // Lógica de color condicional para Monto Total
         if (gasto.limite && gasto.limite > 0) {
           const porcentaje = (gasto.total / gasto.limite) * 100;
           let color = '';
@@ -138,13 +154,16 @@ function GastosPorProveedor() {
       
       const buffer = await workbook.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Reporte_Gastos_por_${reportType}.xlsx`);
+
     } catch (error) {
       console.error("Error al generar el archivo Excel:", error);
-      alert("No se pudo generar el archivo de Excel.");
+      alert("No se pudo generar el archivo de Excel. Revisa la consola para más detalles.");
     }
   };
 
-  if (cargando) return <p className="loading-message">Calculando gastos por proveedor...</p>;
+  if (cargando) {
+    return <p className="loading-message">Calculando gastos por proveedor...</p>;
+  }
 
   if (!currentUser) {
     return (
@@ -170,7 +189,6 @@ function GastosPorProveedor() {
               <th>Nombre del Proveedor</th>
               <th className="cell-numeric">Nº de Facturas</th>
               <th className="cell-numeric">Monto Total</th>
-              {/* Se añade clase para el estilo de la cabecera del límite */}
               <th className="cell-numeric limit-column-header">Límite de Gasto</th>
             </tr>
           </thead>
@@ -186,7 +204,6 @@ function GastosPorProveedor() {
                   <td className={getMontoClass(gasto.total, gasto.limite)}>
                     {gasto.total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                   </td>
-                  {/* Se añade la clase para el estilo de la celda del límite */}
                   <td className="limit-column-cell cell-numeric">
                     {gasto.limite.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                   </td>
