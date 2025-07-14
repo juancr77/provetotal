@@ -55,7 +55,26 @@ function GastosPorMes() {
 
     calcularGastos();
   }, [currentUser]);
+  
+  // --- INICIO: CÓDIGO AÑADIDO ---
+  // Función para determinar la clase CSS basada en el límite de gasto.
+  const getMontoClass = (monto, limite) => {
+    if (!limite || limite <= 0) {
+      return ''; // No hay límite, no se aplica color.
+    }
+    const porcentaje = (monto / limite) * 100;
+    if (porcentaje > 90) {
+      return 'status-red'; // Peligro: Gasto supera el 90% del límite.
+    }
+    if (porcentaje > 75) {
+      return 'status-amber'; // Advertencia: Gasto supera el 75% del límite.
+    }
+    return 'status-green'; // Seguro: Gasto por debajo del 75%.
+  };
+  // --- FIN: CÓDIGO AÑADIDO ---
 
+
+  // --- CÓDIGO ORIGINAL RESTAURADO ---
   const generateExcel = async (reportType) => {
     if (!currentUser) {
       return alert("Necesitas autenticarte para generar reportes.");
@@ -123,6 +142,7 @@ function GastosPorMes() {
       alert("No se pudo generar el archivo de Excel.");
     }
   };
+  // --- FIN DE CÓDIGO RESTAURADO ---
 
   if (cargando) return <p className="loading-message">Cargando...</p>;
 
@@ -162,7 +182,11 @@ function GastosPorMes() {
                   <td>{nombresMeses[gasto.mes]}</td>
                   <td>{gasto.anio}</td>
                   <td>{gasto.conteo}</td>
-                  <td>{gasto.total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
+                  {/* --- MODIFICACIÓN CLAVE --- */}
+                  <td className={getMontoClass(gasto.total, gasto.limite)}>
+                    {gasto.total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
+                  </td>
+                  {/* ------------------------- */}
                   <td>{gasto.limite.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
                 </tr>
               ))

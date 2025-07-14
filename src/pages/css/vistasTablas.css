@@ -88,11 +88,33 @@ td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--co
 
 /* --- ESTILO ESPECÍFICO PARA LA TABLA DE GASTOS POR MES --- */
 .reporte-mes-page th:nth-child(5) {
-  background-color: #ffe8cc;
+  background-color: #f8d7da;
 }
 
 .reporte-mes-page tbody td:nth-child(5) {
-  background-color: #fff4e6;
-  font-weight: 600;
-  color: #7c5c2a;
+  background-color: #f8d7da;
+  color: #721c24 !important;
+  font-weight: bold;
+}
+
+/* hola lola */
+
+/* --- Añadir esto al final de vistasTablas.css --- */
+
+td.status-green {
+  background-color: #d4edda !important; /* Verde claro */
+  color: #155724 !important;
+  font-weight: bold;
+}
+
+td.status-amber {
+  background-color: #fff3cd !important; /* Ámbar claro */
+  color: #856404 !important;
+  font-weight: bold;
+}
+
+td.status-red {
+  background-color: #f8d7da !important; /* Rojo claro */
+  color: #721c24 !important;
+  font-weight: bold;
 }
