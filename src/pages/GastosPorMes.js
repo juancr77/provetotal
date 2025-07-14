@@ -56,25 +56,20 @@ function GastosPorMes() {
     calcularGastos();
   }, [currentUser]);
   
-  // --- INICIO: CÓDIGO AÑADIDO ---
-  // Función para determinar la clase CSS basada en el límite de gasto.
   const getMontoClass = (monto, limite) => {
     if (!limite || limite <= 0) {
-      return ''; // No hay límite, no se aplica color.
+      return '';
     }
     const porcentaje = (monto / limite) * 100;
     if (porcentaje > 90) {
-      return 'status-red'; // Peligro: Gasto supera el 90% del límite.
+      return 'status-red';
     }
     if (porcentaje > 75) {
-      return 'status-amber'; // Advertencia: Gasto supera el 75% del límite.
+      return 'status-amber';
     }
-    return 'status-green'; // Seguro: Gasto por debajo del 75%.
+    return 'status-green';
   };
-  // --- FIN: CÓDIGO AÑADIDO ---
 
-
-  // --- CÓDIGO ORIGINAL RESTAURADO ---
   const generateExcel = async (reportType) => {
     if (!currentUser) {
       return alert("Necesitas autenticarte para generar reportes.");
@@ -82,57 +77,79 @@ function GastosPorMes() {
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet(reportType, {
-        views: [{ state: 'frozen', ySplit: 7 }]
+        views: [{ state: 'frozen', ySplit: 2 }] // Ajustado para congelar solo el encabezado
       });
 
-      const response = await fetch('https://i.imgur.com/5mavo8r.png');
-      const imageBuffer = await response.arrayBuffer();
-      const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
-      worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 } });
-      
-      const contentStartRow = 6;
-      worksheet.mergeCells(`A${contentStartRow}:E${contentStartRow}`);
-      const titleCell = worksheet.getCell(`A${contentStartRow}`);
-      titleCell.value = `Totales por ${reportType}`;
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
-      worksheet.getRow(contentStartRow).height = 30;
+      // --- INICIO DE CAMBIOS PARA EXCEL ---
 
-      const headerRow = worksheet.getRow(contentStartRow + 1);
-      headerRow.height = 25;
-      
-      headerRow.values = ['Mes', 'Año', 'Nº de Facturas', 'Monto Total', 'Límite del Mes'];
+      // Colores (ARGB - Alpha, Red, Green, Blue)
+      const colors = {
+        green: 'FFD4EDDA',
+        amber: 'FFFFF3CD',
+        red: 'FFF8D7DA',
+        header: 'FF2A4B7C',
+        headerText: 'FFFFFFFF',
+        rowEven: 'FFF2F2F2',
+        border: 'FFD9D9D9'
+      };
+
+      // Título y encabezado
+      worksheet.addRow([`Reporte de Gastos por ${reportType}`]).font = { size: 16, bold: true };
+      worksheet.mergeCells('A1:E1');
+      worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+
+      const headerRow = worksheet.addRow(['Mes', 'Año', 'Nº de Facturas', 'Monto Total', 'Límite del Mes']);
       headerRow.eachCell((cell) => {
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
-        cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: colors.header } };
+        cell.font = { bold: true, color: { argb: colors.headerText } };
         cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      });
-      
-      gastos.forEach(gasto => {
-        worksheet.addRow([
-          nombresMeses[gasto.mes], gasto.anio, gasto.conteo, gasto.total, gasto.limite
-        ]);
+        cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
       });
 
-      const columnCount = headerRow.cellCount;
-      worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-        if (rowNumber > contentStartRow + 1) {
-          for (let i = 1; i <= columnCount; i++) {
-            const cell = row.getCell(i);
-            cell.border = {
-              top: { style: 'thin', color: { argb: 'FFD9D9D9' } }, left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
-              bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } }, right: { style: 'thin', color: { argb: 'FFD9D9D9' } }
-            };
-            if (rowNumber % 2 === 0) {
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-            }
+      // Añadir datos y aplicar estilos condicionales
+      gastos.forEach(gasto => {
+        const row = worksheet.addRow([
+          nombresMeses[gasto.mes],
+          gasto.anio,
+          gasto.conteo,
+          gasto.total,
+          gasto.limite
+        ]);
+        
+        const montoCell = row.getCell(4);
+        montoCell.numFmt = '$#,##0.00';
+        
+        const limiteCell = row.getCell(5);
+        limiteCell.numFmt = '$#,##0.00';
+
+        // Lógica de color para la celda de Monto
+        const monto = gasto.total;
+        const limite = gasto.limite;
+
+        if (limite && limite > 0) {
+          const porcentaje = (monto / limite) * 100;
+          let color = '';
+          if (porcentaje > 90) {
+            color = colors.red;
+          } else if (porcentaje > 75) {
+            color = colors.amber;
+          } else {
+            color = colors.green;
           }
+          montoCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: color }
+          };
         }
       });
       
-      worksheet.getColumn(4).numFmt = '$#,##0.00';
-      worksheet.getColumn(5).numFmt = '$#,##0.00';
-      worksheet.columns.forEach(column => { column.width = 25; });
+      // Ajustar ancho de columnas
+      worksheet.columns.forEach(column => {
+        column.width = 20;
+      });
+
+      // --- FIN DE CAMBIOS PARA EXCEL ---
       
       const buffer = await workbook.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Reporte_Gastos_por_${reportType}.xlsx`);
@@ -142,7 +159,6 @@ function GastosPorMes() {
       alert("No se pudo generar el archivo de Excel.");
     }
   };
-  // --- FIN DE CÓDIGO RESTAURADO ---
 
   if (cargando) return <p className="loading-message">Cargando...</p>;
 
@@ -182,11 +198,9 @@ function GastosPorMes() {
                   <td>{nombresMeses[gasto.mes]}</td>
                   <td>{gasto.anio}</td>
                   <td>{gasto.conteo}</td>
-                  {/* --- MODIFICACIÓN CLAVE --- */}
                   <td className={getMontoClass(gasto.total, gasto.limite)}>
                     {gasto.total.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}
                   </td>
-                  {/* ------------------------- */}
                   <td>{gasto.limite.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
                 </tr>
               ))
