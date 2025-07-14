@@ -147,7 +147,7 @@ td.status-green {
 }
 
 td.status-amber {
-  background-color: #fef08a !important; /* Amarillo pastel más vivo */
+  background-color: #FFFF00 !important; /* Amarillo pastel más vivo */
   color: #854d0e !important; /* Texto oscuro para alto contraste */
   font-weight: bold;
 }
