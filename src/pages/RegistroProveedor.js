@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, addDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
-import './css/Formulario.css';
+import './css/Formulario.css'; // Asegúrate de que este CSS esté enlazado y correcto
 
 function RegistroProveedor() {
   const { currentUser } = useAuth();
@@ -10,18 +10,43 @@ function RegistroProveedor() {
   const [nombre, setNombre] = useState('');
   const [apellidoPaterno, setApellidoPaterno] = useState('');
   const [apellidoMaterno, setApellidoMaterno] = useState('');
+  
+  // --- INICIO: Código añadido para el límite de gasto ---
+  const [limiteGasto, setLimiteGasto] = useState('');
+  // --- FIN: Código añadido para el límite de gasto ---
+
   const [error, setError] = useState(null);
   const [mensajeExito, setMensajeExito] = useState('');
-
-  // Se añade un estado de carga que depende de la autenticación
   const [cargandoAuth, setCargandoAuth] = useState(true);
 
   useEffect(() => {
-    // Se simula la carga del estado de autenticación
     if (currentUser !== undefined) {
       setCargandoAuth(false);
     }
   }, [currentUser]);
+
+  // --- INICIO: Funciones para manejar el campo de monto ---
+  const MIN_LIMITE = 0;
+
+  const ajustarMonto = (ajuste) => {
+    const montoActual = parseFloat(limiteGasto) || 0;
+    let nuevoMonto = montoActual + ajuste;
+    nuevoMonto = Math.max(MIN_LIMITE, nuevoMonto); // No permitir valores negativos
+    setLimiteGasto(nuevoMonto.toString());
+  };
+
+  const handleMontoChange = (e) => {
+    const valor = e.target.value;
+    if (valor === '') {
+      setLimiteGasto('');
+      return;
+    }
+    const numero = parseFloat(valor);
+    if (!isNaN(numero) && numero >= MIN_LIMITE) {
+      setLimiteGasto(valor);
+    }
+  };
+  // --- FIN: Funciones para manejar el campo de monto ---
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -42,16 +67,19 @@ function RegistroProveedor() {
       nombre: nombre.trim(),
       apellidoPaterno: apellidoPaterno.trim(),
       ...(apellidoMaterno.trim() && { apellidoMaterno: apellidoMaterno.trim() }),
+      limiteGasto: parseFloat(limiteGasto) || 0, // Se añade el nuevo campo al objeto
       fechaRegistro: new Date()
     };
 
     try {
       await addDoc(collection(db, "proveedores"), nuevoProveedor);
       setMensajeExito(`Proveedor registrado con éxito.`);
+      // Limpiar todos los campos del formulario
       setIdProveedor('');
       setNombre('');
       setApellidoPaterno('');
       setApellidoMaterno('');
+      setLimiteGasto(''); // Se limpia el nuevo campo
     } catch (err) {
       console.error("Error al registrar el proveedor: ", err);
       setError('No se pudo registrar el proveedor. Inténtalo de nuevo.');
@@ -62,10 +90,9 @@ function RegistroProveedor() {
     return <p className="loading-message">Cargando...</p>;
   }
 
-  // Si no hay usuario, se muestra el mensaje de autenticación.
   if (!currentUser) {
     return (
-      <div className="form-container">
+      <div className="registro-factura-container">
         <h2>Formulario de Registro de Proveedor</h2>
         <p className="auth-message">Necesitas autenticarte para registrar un nuevo proveedor.</p>
       </div>
@@ -73,7 +100,7 @@ function RegistroProveedor() {
   }
 
   return (
-    <div className="registro-factura-container"> 
+    <div className="registro-factura-container">
       <h2>Formulario de Registro de Proveedor</h2>
       <form onSubmit={handleSubmit} className="registro-form">
         <div className="form-group">
@@ -115,6 +142,31 @@ function RegistroProveedor() {
             onChange={(e) => setApellidoMaterno(e.target.value)}
           />
         </div>
+
+        {/* --- INICIO: Sección para el Límite de Gasto --- */}
+        <div className="monto-group full-width">
+          <label htmlFor="limiteGasto">Límite de Gasto (Opcional):</label>
+          <div className="monto-controls">
+            <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+            <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+            <div className="monto-input-container">
+              <span>$</span>
+              <input 
+                id="limiteGasto" 
+                type="number" 
+                value={limiteGasto} 
+                onChange={handleMontoChange} 
+                min={MIN_LIMITE} 
+                step="0.01" 
+                placeholder="0.00" 
+              />
+            </div>
+            <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+            <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+          </div>
+        </div>
+        {/* --- FIN: Sección para el Límite de Gasto --- */}
+
         <div className="submit-button-container">
           <button type="submit" className="submit-button">
             Registrar Proveedor

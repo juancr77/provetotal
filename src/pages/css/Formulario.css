@@ -1,34 +1,45 @@
-/* Para: RegistroFactura.js y RegistroProveedor.js */
+/* ====================================================== */
+/* ESTILOS PARA FORMULARIOS                      */
+/* (RegistroFactura.js, RegistroProveedor.js, etc.)      */
+/* ====================================================== */
 
+/* Contenedor principal del formulario */
 .registro-factura-container {
-  background-color: var(--color-superficie);
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: var(--sombra-suave);
+  max-width: 850px; /* Un poco más de espacio para dos columnas */
   margin: 2rem auto;
-  max-width: 800px;
+  padding: 2rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .registro-factura-container h2 {
-    color: var(--color-texto-titulo);
-    border-bottom: 2px solid var(--color-primario);
-    padding-bottom: 1rem;
+  color: #1c3d5a;
+  border-bottom: 2px solid #a0c4ff;
+  padding-bottom: 1rem;
+  margin-top: 0;
+  margin-bottom: 2rem; /* Más espacio debajo del título */
 }
 
+/* El grid que organiza los campos del formulario */
 .registro-form {
   display: grid;
+  /* Define explícitamente 2 columnas de igual tamaño */
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  /* Espaciado entre filas (1.5rem) y columnas (2rem) */
+  gap: 1.5rem 2rem;
 }
 
+/* Estilo para cada grupo de etiqueta + input */
 .form-group {
-  margin-bottom: 0; /* Se elimina el margen para que el grid lo controle */
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem; /* Espacio entre la etiqueta y el input */
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
   font-weight: 600;
+  color: #4A5568; /* Un poco más oscuro para mejor legibilidad */
 }
 
 .form-group input,
@@ -36,26 +47,57 @@
 .form-group textarea {
   width: 100%;
   padding: 12px;
-  border: 1px solid var(--color-borde);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  box-sizing: border-box;
+  box-sizing: border-box; /* Importante para que el padding no afecte el ancho */
+  font-size: 1rem;
 }
 
-/* Controles de monto */
-.monto-controls {
+/* --- SECCIÓN DE MONTO CORREGIDA --- */
+
+/* Hace que este grupo ocupe todo el ancho del grid */
+.monto-group {
+  grid-column: 1 / -1;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
+/* El contenedor de los botones y el input */
+.monto-controls {
+  display: flex;
+  align-items: center; /* Alinea verticalmente los botones y el input */
+  gap: 0.5rem;
+}
+
+.monto-controls button {
+  flex-shrink: 0; /* Evita que los botones se encojan */
+  padding: 10px 15px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e0;
+  background-color: #f7fafc;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+.monto-controls button:hover {
+  background-color: #edf2f7;
+}
+
+/* El contenedor específico del input y el signo de '$' */
 .monto-input-container {
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-borde);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-  padding-left: 0.75rem;
   background-color: #fff;
-  flex-grow: 1;
+  flex-grow: 1; /* ¡CLAVE! Hace que este contenedor se estire para llenar el espacio */
+}
+
+.monto-input-container span {
+  padding-left: 12px;
+  font-weight: bold;
+  color: #718096;
 }
 
 .monto-input-container input {
@@ -65,10 +107,19 @@
   width: 100%;
   padding: 12px 10px 12px 8px;
   font-size: 1rem;
+  text-align: right; /* Alinea el número a la derecha, típico para montos */
 }
 
-.monto-group, .full-width, .submit-button-container {
+
+/* --- OTROS ELEMENTOS DEL FORMULARIO --- */
+
+.full-width,
+.submit-button-container {
   grid-column: 1 / -1; /* Ocupa todo el ancho */
+}
+
+.submit-button-container {
+  margin-top: 1rem;
 }
 
 .submit-button {
@@ -83,6 +134,7 @@
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .submit-button:hover {
     background-color: var(--color-exito-oscuro);
 }
@@ -94,5 +146,12 @@
     margin-top: 1rem;
     grid-column: 1 / -1;
 }
-.mensaje-error { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
-.mensaje-exito { background-color: var(--color-exito); color: var(--color-texto-exito); }
+
+.mensaje-error { 
+  background-color: var(--color-peligro); 
+  color: var(--color-texto-peligro); 
+}
+.mensaje-exito { 
+  background-color: var(--color-exito); 
+  color: var(--color-texto-exito); 
+}
