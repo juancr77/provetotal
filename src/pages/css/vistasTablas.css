@@ -20,8 +20,8 @@
   margin-left: auto;
   margin-bottom: 1.5rem;
   padding: 12px 20px;
-  background-color: #bde4cb;
-  color: #1e4620;
+  background-color: #1d6f42;
+  color: white;
   border: none;
   border-radius: 8px;
   font-weight: 600;
@@ -29,12 +29,14 @@
   transition: background-color 0.2s;
 }
 .excel-button:hover {
-  background-color: #a3d6b4;
+  background-color: #165934;
 }
 
 .table-container {
   width: 100%;
   overflow-x: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: 8px;
 }
 
 table {
@@ -43,14 +45,19 @@ table {
 }
 
 th, td {
-  padding: 1rem;
+  padding: 12px 15px;
   text-align: left;
   border-bottom: 1px solid var(--color-borde);
   vertical-align: middle;
+  white-space: nowrap;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
 }
 
 thead {
-  background-color: #f2f6ff;
+  background-color: #f8f9fa;
 }
 
 th {
@@ -60,12 +67,21 @@ th {
   text-transform: uppercase;
 }
 
+.cell-numeric {
+  text-align: right;
+}
+
+.cell-center {
+  text-align: center;
+}
+
 td[data-status] {
   font-weight: 600;
-  padding: 0.5rem 0.8rem;
+  padding: 6px 12px;
   border-radius: 16px;
   text-align: center;
-  white-space: nowrap;
+  display: inline-block;
+  min-width: 120px;
 }
 
 td[data-status="Pendiente"] { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
@@ -86,35 +102,34 @@ td[data-status="Pagada"] { background-color: var(--color-exito); color: var(--co
 }
 .detail-button:hover { background-color: var(--color-primario-oscuro); }
 
-/* --- ESTILO ESPECÍFICO PARA LA TABLA DE GASTOS POR MES --- */
-.reporte-mes-page th:nth-child(5) {
-  background-color: #f8d7da;
-}
 
-.reporte-mes-page tbody td:nth-child(5) {
-  background-color: #f8d7da;
-  color: #721c24 !important;
-  font-weight: bold;
-}
-
-/* hola lola */
-
-/* --- Añadir esto al final de vistasTablas.css --- */
+/* --- ESTILOS DE ESTADO Y LÍMITE (ACTUALIZADOS) --- */
 
 td.status-green {
-  background-color: #d4edda !important; /* Verde claro */
+  background-color: #d4edda !important;
   color: #155724 !important;
   font-weight: bold;
 }
 
 td.status-amber {
-  background-color: #fff3cd !important; /* Ámbar claro */
+  background-color: #fff3cd !important;
   color: #856404 !important;
   font-weight: bold;
 }
 
 td.status-red {
-  background-color: #f8d7da !important; /* Rojo claro */
+  background-color: #f8d7da !important;
   color: #721c24 !important;
   font-weight: bold;
+}
+
+/* ESTILO PARA LA COLUMNA DE LÍMITE (APLICA A AMBAS TABLAS) */
+.limit-column-header {
+  background-color: #ffe8cc !important; /* Color naranja pastel para encabezado */
+}
+
+.limit-column-cell {
+  background-color: #fff4e6 !important; /* Color naranja pastel más claro para celda */
+  font-weight: 600;
+  color: #7c5c2a;
 }
