@@ -71,3 +71,20 @@
     color: var(--color-primario-oscuro);
     font-weight: bold;
 }
+
+/* nuevo button compartir */
+
+/* ... (todo tu CSS existente va aquí arriba) ... */
+
+.btn-editar { background-color: var(--color-primario); color: var(--color-texto-titulo); }
+.btn-eliminar { background-color: var(--color-peligro); color: var(--color-texto-peligro); }
+.btn-secundario { background-color: #e9ecef; color: #343a40; }
+
+/* --- AÑADIR ESTA NUEVA REGLA --- */
+.btn-compartir {
+  background-color: #269919; /* Un color gris neutro */
+  color: white;
+}
+.btn-compartir:hover {
+  background-color: #5a6268;
+}

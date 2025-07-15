@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { db } from '../firebase.js'; // <- RUTA CORREGIDA
+import { db } from '../firebase.js';
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext';
-import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js'; // <- RUTA CORREGIDA
+import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/DetalleVista.css';
-
-// ... (El resto del código del archivo no cambia, es exactamente el mismo que te di antes)
-// ... (Para brevedad, no lo repito aquí, pero tú déjalo tal cual estaba)
-// El código completo y correcto se encuentra en la respuesta anterior, solo necesitas cambiar la línea de importación de arriba.
-// El resto del archivo permanece idéntico.
 
 function DetalleFactura() {
   const { currentUser } = useAuth();
@@ -57,6 +52,30 @@ function DetalleFactura() {
     };
     fetchFactura();
   }, [facturaId]);
+
+  // --- INICIO: NUEVA FUNCIÓN PARA COMPARTIR ---
+  const handleShare = async () => {
+    const shareData = {
+      title: `Factura: ${factura.numeroFactura}`,
+      text: `Detalles de la factura de ${factura.nombreProveedor}`,
+      url: window.location.href // URL de la página actual
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        console.log('Factura compartida con éxito.');
+      } catch (err) {
+        console.error('Error al compartir:', err);
+      }
+    } else {
+      // Fallback para navegadores que no soportan la API de compartir (ej. escritorio)
+      navigator.clipboard.writeText(shareData.url);
+      alert('Enlace copiado al portapapeles.');
+    }
+  };
+  // --- FIN: NUEVA FUNCIÓN PARA COMPARTIR ---
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -249,11 +268,15 @@ function DetalleFactura() {
           <div className="detalle-acciones">
             <button className="btn btn-editar" onClick={() => setIsEditing(true)}>✏️ Editar</button>
             <button className="btn btn-eliminar" onClick={handleDelete}>🗑️ Eliminar</button>
-            <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir Detalles</button>
+            <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir</button>
+            {/* --- INICIO: NUEVO BOTÓN DE COMPARTIR --- */}
+            <button className="btn btn-compartir" onClick={handleShare}>🔗 Compartir</button>
+            {/* --- FIN: NUEVO BOTÓN DE COMPARTIR --- */}
           </div>
         </>
       ) : (
         <form className="detalle-form" onSubmit={handleUpdate}>
+          {/* El formulario de edición no necesita el botón de compartir, así que no se añade aquí */}
           <div className="form-group">
             <label>Proveedor:</label>
             <input type="text" value={formData.nombreProveedor || ''} disabled readOnly />
