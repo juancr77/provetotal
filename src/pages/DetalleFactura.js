@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase.js';
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext';
 import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/DetalleVista.css';
+import './css/Formulario.css';
 
 function DetalleFactura() {
   const { currentUser } = useAuth();
@@ -14,25 +15,29 @@ function DetalleFactura() {
   const navigate = useNavigate();
 
   const [factura, setFactura] = useState(null);
+  const [proveedor, setProveedor] = useState(null); // Estado para guardar datos del proveedor
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
+  
+  const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
   const formatDateForInput = (date) => {
     if (!date) return '';
     const d = new Date(date);
-    const year = d.getFullYear();
-    const month = (`0${d.getMonth() + 1}`).slice(-2);
-    const day = (`0${d.getDate()}`).slice(-2);
-    return `${year}-${month}-${day}`;
+    const offset = d.getTimezoneOffset() * 60000;
+    const localDate = new Date(d.getTime() - offset);
+    return localDate.toISOString().split('T')[0];
   };
 
   useEffect(() => {
-    const fetchFactura = async () => {
+    const fetchFacturaYProveedor = async () => {
+      setCargando(true);
       try {
         const docRef = doc(db, "facturas", facturaId);
         const docSnap = await getDoc(docRef);
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           setFactura({ ...data, id: docSnap.id });
@@ -41,49 +46,52 @@ function DetalleFactura() {
             fechaFactura: formatDateForInput(data.fechaFactura.toDate()),
             monto: String(data.monto)
           });
+          
+          // --- Se obtiene la información del proveedor para tener acceso a su límite de gasto ---
+          if (data.idProveedor) {
+            const q = query(collection(db, "proveedores"), where("idProveedor", "==", data.idProveedor));
+            const proveedorSnapshot = await getDocs(q);
+            if (!proveedorSnapshot.empty) {
+              setProveedor(proveedorSnapshot.docs[0].data());
+            } else {
+              console.warn(`Proveedor con ID ${data.idProveedor} no encontrado.`);
+            }
+          }
         } else {
           setError("No se encontró la factura.");
         }
       } catch (err) {
+        console.error(err);
         setError("Error al cargar los datos.");
       } finally {
         setCargando(false);
       }
     };
-    fetchFactura();
+    fetchFacturaYProveedor();
   }, [facturaId]);
 
-  // --- INICIO: NUEVA FUNCIÓN PARA COMPARTIR ---
   const handleShare = async () => {
+    if (!factura) return;
     const shareData = {
       title: `Factura: ${factura.numeroFactura}`,
-      text: `Detalles de la factura de ${factura.nombreProveedor}`,
-      url: window.location.href // URL de la página actual
+      text: `Detalles de la factura de ${factura.nombreProveedor}.`,
+      url: window.location.href,
     };
-
     if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        console.log('Factura compartida con éxito.');
-      } catch (err) {
-        console.error('Error al compartir:', err);
-      }
+      await navigator.share(shareData).catch(err => console.error('Error al compartir:', err));
     } else {
-      // Fallback para navegadores que no soportan la API de compartir (ej. escritorio)
       navigator.clipboard.writeText(shareData.url);
-      alert('Enlace copiado al portapapeles.');
+      alert('¡Enlace de la factura copiado al portapapeles!');
     }
   };
-  // --- FIN: NUEVA FUNCIÓN PARA COMPARTIR ---
-
-
+  
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
   
   const MIN_MONTO = 1;
-  const MAX_MONTO = 5000000;
+  const MAX_MONTO = 50000000;
 
   const ajustarMonto = (ajuste) => {
     const montoActual = parseFloat(formData.monto) || 0;
@@ -94,58 +102,99 @@ function DetalleFactura() {
 
   const handleMontoChange = (e) => {
     const valor = e.target.value;
-    if (valor === '') {
-        setFormData(prev => ({ ...prev, monto: '' }));
-        return;
-    }
-    const numero = parseFloat(valor);
-    if (numero > MAX_MONTO) {
-        setFormData(prev => ({ ...prev, monto: String(MAX_MONTO) }));
-    } else {
+    if (valor === '' || /^\d*\.?\d*$/.test(valor)) {
         setFormData(prev => ({ ...prev, monto: valor }));
     }
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para actualizar una factura.");
+    if (!currentUser || !factura || !proveedor) {
+      return alert("Datos no disponibles. Por favor, recargue la página.");
     }
+    setError('');
+
+    const newMonto = parseFloat(formData.monto);
+    if (isNaN(newMonto)) {
+        setError("El monto debe ser un número válido.");
+        return;
+    }
+
+    const oldMonto = factura.monto;
+    const montoDifference = newMonto - oldMonto;
+
+    // Convertir la fecha del formulario a objeto Date (ajustando zona horaria)
+    const [year, month, day] = formData.fechaFactura.split('-').map(Number);
+    const newFechaFactura = new Date(Date.UTC(year, month - 1, day));
     
-    const oldProveedorId = factura.idProveedor;
-    const oldFecha = factura.fechaFactura.toDate();
-    
+    // Validar que no se cambie de mes, ya que complica el recálculo de totales
+    if (factura.fechaFactura.toDate().getMonth() !== newFechaFactura.getMonth() ||
+        factura.fechaFactura.toDate().getFullYear() !== newFechaFactura.getFullYear()) {
+        setError("No se puede cambiar el mes de una factura. Por favor, elimine esta y cree una nueva en el mes correcto.");
+        return;
+    }
+
     try {
+      // --- INICIO DE LA LÓGICA DE VALIDACIÓN ---
+
+      // 1. OBTENER DATOS Y LÍMITE DEL PROVEEDOR
+      const limiteProveedor = proveedor.limiteGasto || 0;
+      const totalProveedorDocRef = doc(db, "totalProveedor", factura.idProveedor);
+      const totalProveedorSnap = await getDoc(totalProveedorDocRef);
+      const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
+      const nuevoTotalProveedor = totalProveedorActual + montoDifference;
+
+      // 2. OBTENER DATOS Y LÍMITE DEL MES
+      const mesIndex = newFechaFactura.getMonth();
+      const anio = newFechaFactura.getFullYear();
+      const limiteMesDocRef = doc(db, "limiteMes", String(mesIndex));
+      const limiteMesSnap = await getDoc(limiteMesDocRef);
+      const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
+      
+      const totalMesDocId = `${anio}-${String(mesIndex).padStart(2, '0')}`;
+      const totalMesDocRef = doc(db, "totalMes", totalMesDocId);
+      const totalMesSnap = await getDoc(totalMesDocRef);
+      const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
+      const nuevoTotalMes = totalMesActual + montoDifference;
+
+      // 3. VERIFICACIÓN DE LÍMITES (BLOQUEO)
+      if (limiteProveedor > 0 && nuevoTotalProveedor > limiteProveedor) {
+        setError(`Límite de gasto para el proveedor "${factura.nombreProveedor}" excedido. No se puede guardar.`);
+        return;
+      }
+      if (limiteMes > 0 && nuevoTotalMes > limiteMes) {
+        setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido. No se puede guardar.`);
+        return;
+      }
+      
+      // 4. VERIFICACIÓN DE ADVERTENCIAS (95%)
+      const advertencias = [];
+      if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95) && nuevoTotalProveedor <= limiteProveedor) {
+        advertencias.push(`- Se está acercando al límite de gasto del proveedor "${factura.nombreProveedor}".`);
+      }
+      if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95) && nuevoTotalMes <= limiteMes) {
+        advertencias.push(`- Se está acercando al límite de gasto para el mes de ${nombresMeses[mesIndex]}.`);
+      }
+      
+      if (advertencias.length > 0) {
+        const continuar = window.confirm("ADVERTENCIA:\n\n" + advertencias.join('\n') + "\n\n¿Desea guardar los cambios de todos modos?");
+        if (!continuar) {
+          return; // El usuario canceló la actualización
+        }
+      }
+      // --- FIN DE LA LÓGICA DE VALIDACIÓN ---
+
+      // Si todo está bien, se procede a la actualización
       const docRef = doc(db, "facturas", facturaId);
-      
-      const [year, month, day] = formData.fechaFactura.split('-').map(Number);
-      const newFechaFactura = new Date(year, month - 1, day);
-      
-      const dataToUpdate = { 
-        ...formData, 
-        monto: parseFloat(formData.monto), 
-        fechaFactura: newFechaFactura
-      };
+      const dataToUpdate = { ...formData, monto: newMonto, fechaFactura: newFechaFactura };
       
       await updateDoc(docRef, dataToUpdate);
+      
+      // Se recalcula el total para el proveedor y el mes afectado
+      await recalcularTotalProveedor(factura.idProveedor);
+      await recalcularTotalMes(newFechaFactura);
 
-      await recalcularTotalProveedor(dataToUpdate.idProveedor);
-      if (oldProveedorId !== dataToUpdate.idProveedor) {
-          await recalcularTotalProveedor(oldProveedorId);
-      }
-      
-      await recalcularTotalMes(dataToUpdate.fechaFactura);
-      const newFecha = dataToUpdate.fechaFactura;
-      if (oldFecha.getMonth() !== newFecha.getMonth() || oldFecha.getFullYear() !== newFecha.getFullYear()) {
-          await recalcularTotalMes(oldFecha);
-      }
-      
-      const updatedFactura = { 
-        ...dataToUpdate, 
-        fechaFactura: { toDate: () => dataToUpdate.fechaFactura } 
-      };
-      setFactura(updatedFactura);
-      setIsEditing(false);
+      setIsEditing(false); // Vuelve a la vista de solo lectura
 
     } catch (err) {
       console.error("Error al actualizar: ", err);
@@ -154,19 +203,14 @@ function DetalleFactura() {
   };
 
   const handleDelete = async () => {
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para eliminar una factura.");
-    }
+    if (!currentUser) return alert("Necesitas autenticarte para eliminar una factura.");
     if (window.confirm("¿Estás seguro de que quieres eliminar esta factura?")) {
       try {
         const proveedorIdParaActualizar = factura.idProveedor;
         const fechaParaActualizar = factura.fechaFactura.toDate();
-
         await deleteDoc(doc(db, "facturas", facturaId));
-        
         await recalcularTotalProveedor(proveedorIdParaActualizar);
         await recalcularTotalMes(fechaParaActualizar);
-
         navigate('/ver-facturas');
       } catch (err) {
         setError("No se pudo eliminar la factura.");
@@ -175,12 +219,9 @@ function DetalleFactura() {
   };
 
   const generarPDF = async () => {
-    if (!currentUser || !factura) {
-        return alert("No se puede generar el PDF.");
-    }
+    if (!currentUser || !factura) return;
     const docPDF = new jsPDF('p', 'pt', 'letter');
     const pdfWidth = docPDF.internal.pageSize.getWidth();
-  
     try {
       const response = await fetch('https://i.imgur.com/5mavo8r.png');
       const imageBlob = await response.blob();
@@ -191,14 +232,12 @@ function DetalleFactura() {
       docPDF.addImage(imageUrl, 'PNG', x, 40, imageWidth, imageHeight);
       URL.revokeObjectURL(imageUrl);
     } catch (error) { console.error("Error al cargar la imagen de cabecera:", error); }
-  
+
     const contentY = 40 + 88 + 40;
     docPDF.setFontSize(18);
     docPDF.setTextColor('#2A4B7C');
     docPDF.text("Detalles de la Factura", pdfWidth / 2, contentY, { align: 'center' });
-  
     const fecha = factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : new Date(factura.fechaFactura);
-
     const tableData = [
       ['Proveedor', factura.nombreProveedor],
       ['Número de Factura', factura.numeroFactura],
@@ -207,36 +246,18 @@ function DetalleFactura() {
       ['Monto', factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })],
       ['Estatus', factura.estatus]
     ];
-    
-    const statusColors = {
-      'Pendiente': [255, 199, 206], 'Recibida': [255, 242, 204], 'Con solventación': [252, 221, 173],
-      'En contabilidad': [221, 235, 247], 'Pagada': [198, 239, 206]
-    };
-  
     autoTable(docPDF, {
       startY: contentY + 20,
       body: tableData,
       theme: 'grid',
       styles: { fontSize: 10, cellPadding: 8, valign: 'middle' },
       columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 248, 255] } },
-      didDrawCell: (data) => {
-        if (data.section === 'body' && data.column.index === 1 && data.row.index === 5) {
-          const status = String(data.cell.raw);
-          const color = statusColors[status];
-          if (color) {
-            docPDF.setFillColor(...color);
-            docPDF.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-            docPDF.setTextColor(50, 50, 50);
-            docPDF.text(status, data.cell.x + data.cell.padding('left'), data.cell.y + data.cell.height / 2, { baseline: 'middle' });
-          }
-        }
-      }
     });
     docPDF.save(`Detalle_Factura_${factura.numeroFactura}.pdf`);
   };
 
   if (cargando) return <p className="loading-message">Cargando...</p>;
-  if (error) return <p className="error-message">{error}</p>;
+  if (error && !isEditing) return <p className="error-message">{error}</p>;
 
   return (
     <div className="detalle-container">
@@ -266,20 +287,18 @@ function DetalleFactura() {
             )}
           </div>
           <div className="detalle-acciones">
-            <button className="btn btn-editar" onClick={() => setIsEditing(true)}>✏️ Editar</button>
+            <button className="btn btn-editar" onClick={() => {setError(''); setIsEditing(true);}}>✏️ Editar</button>
             <button className="btn btn-eliminar" onClick={handleDelete}>🗑️ Eliminar</button>
             <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir</button>
-            {/* --- INICIO: NUEVO BOTÓN DE COMPARTIR --- */}
             <button className="btn btn-compartir" onClick={handleShare}>🔗 Compartir</button>
-            {/* --- FIN: NUEVO BOTÓN DE COMPARTIR --- */}
           </div>
         </>
       ) : (
-        <form className="detalle-form" onSubmit={handleUpdate}>
-          {/* El formulario de edición no necesita el botón de compartir, así que no se añade aquí */}
+        <form className="detalle-form registro-form" onSubmit={handleUpdate}>
+          {error && <p className="mensaje mensaje-error">{error}</p>}
           <div className="form-group">
             <label>Proveedor:</label>
-            <input type="text" value={formData.nombreProveedor || ''} disabled readOnly />
+            <input type="text" name="nombreProveedor" value={formData.nombreProveedor || ''} disabled />
           </div>
           <div className="form-group">
             <label htmlFor="numeroFactura">Número de Factura:</label>
@@ -290,25 +309,8 @@ function DetalleFactura() {
             <input id="fechaFactura" type="date" name="fechaFactura" value={formData.fechaFactura || ''} onChange={handleChange} required />
           </div>
           <div className="form-group">
-            <label htmlFor="descripcion">Descripción:</label>
-            <textarea id="descripcion" name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea>
-          </div>
-          <div className="form-group">
-            <label>Monto:</label>
-            <div className="monto-controls">
-              <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
-              <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
-              <div className="monto-input-container">
-                <span>$</span>
-                <input type="number" name="monto" value={formData.monto} onChange={handleMontoChange} min={MIN_MONTO} max={MAX_MONTO} required />
-              </div>
-              <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
-              <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
-            </div>
-          </div>
-          <div className="form-group">
             <label htmlFor="estatus">Estatus:</label>
-            <select id="estatus" name="estatus" value={formData.estatus} onChange={handleChange} required>
+            <select id="estatus" name="estatus" value={formData.estatus || ''} onChange={handleChange} required>
               <option value="Pendiente">Pendiente</option>
               <option value="Recibida">Recibida</option>
               <option value="Con solventación">Con solventación</option>
@@ -316,7 +318,24 @@ function DetalleFactura() {
               <option value="Pagada">Pagada</option>
             </select>
           </div>
-          <div className="detalle-acciones">
+          <div className="form-group full-width">
+            <label htmlFor="descripcion">Descripción:</label>
+            <textarea id="descripcion" name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea>
+          </div>
+          <div className="monto-group full-width">
+            <label>Monto:</label>
+            <div className="monto-controls">
+              <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+              <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+              <div className="monto-input-container">
+                <span>$</span>
+                <input type="number" name="monto" value={formData.monto || ''} onChange={handleMontoChange} min={MIN_MONTO} max={MAX_MONTO} required />
+              </div>
+              <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+              <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+            </div>
+          </div>
+          <div className="detalle-acciones full-width">
             <button className="btn btn-editar" type="submit">✅ Guardar Cambios</button>
             <button className="btn btn-secundario" type="button" onClick={() => setIsEditing(false)}>❌ Cancelar</button>
           </div>
