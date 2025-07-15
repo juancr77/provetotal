@@ -30,10 +30,7 @@ function RegistroFactura() {
 
   useEffect(() => {
     const fetchProveedores = async () => {
-      if (!currentUser) {
-        setCargando(false);
-        return;
-      }
+      if (!currentUser) { setCargando(false); return; }
       try {
         const querySnapshot = await getDocs(collection(db, "proveedores"));
         const lista = querySnapshot.docs.map(doc => {
@@ -65,7 +62,7 @@ function RegistroFactura() {
   };
 
   const MIN_MONTO = 1;
-  const MAX_MONTO = 30000000;
+  const MAX_MONTO = 5000000;
 
   const ajustarMonto = (ajuste) => {
     const montoActual = parseFloat(monto) || 0;
@@ -76,25 +73,14 @@ function RegistroFactura() {
 
   const handleMontoChange = (e) => {
     const valor = e.target.value;
-    if (valor === '') {
-      setMonto('');
-      return;
-    }
-    const numero = parseFloat(valor);
-    if (!isNaN(numero)) {
-      if (numero > MAX_MONTO) {
-        setMonto(MAX_MONTO.toString());
-      } else {
+    if (valor === '' || /^\d*\.?\d*$/.test(valor)) {
         setMonto(valor);
-      }
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!currentUser) {
-      return alert("Necesitas autenticarte para registrar una factura.");
-    }
+    if (!currentUser) return alert("Necesitas autenticarte para registrar una factura.");
     
     setError(null);
     setMensajeExito('');
@@ -105,13 +91,13 @@ function RegistroFactura() {
     }
     
     const montoNumerico = parseFloat(monto);
+    
+    // --- LÓGICA DE FECHA CONSISTENTE (UTC) ---
     const [year, month, day] = fechaFactura.split('-').map(Number);
-    const fechaFacturaDate = new Date(year, month - 1, day);
+    const fechaFacturaDate = new Date(Date.UTC(year, month - 1, day));
 
     try {
       // --- INICIO DE LA LÓGICA DE VALIDACIÓN ---
-
-      // 1. OBTENER DATOS Y LÍMITE DEL PROVEEDOR
       const proveedorSeleccionado = proveedores.find(p => p.idProveedor === idProveedor);
       const limiteProveedor = proveedorSeleccionado?.limiteGasto || 0;
       
@@ -120,35 +106,29 @@ function RegistroFactura() {
       const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
       const nuevoTotalProveedor = totalProveedorActual + montoNumerico;
 
-      // 2. OBTENER DATOS Y LÍMITE DEL MES
-      const mesIndex = fechaFacturaDate.getMonth(); // 0 para Enero, 1 para Febrero...
-      const anio = fechaFacturaDate.getFullYear();
+      const mesIndex = fechaFacturaDate.getUTCMonth();
+      const anio = fechaFacturaDate.getUTCFullYear();
       
-      // El ID del documento de límite de mes es el índice (0-11)
       const limiteMesDocRef = doc(db, "limiteMes", String(mesIndex));
       const limiteMesSnap = await getDoc(limiteMesDocRef);
       const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
       
-      // El ID del documento del total del mes es 'AÑO-MES_INDEX' (ej: "2024-06")
-      // --- CORRECCIÓN CLAVE AQUÍ ---
       const totalMesDocId = `${anio}-${String(mesIndex).padStart(2, '0')}`;
       const totalMesDocRef = doc(db, "totalMes", totalMesDocId);
       const totalMesSnap = await getDoc(totalMesDocRef);
       const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
       const nuevoTotalMes = totalMesActual + montoNumerico;
 
-      // 3. VERIFICACIÓN DE LÍMITES (BLOQUEO)
       if (limiteProveedor > 0 && nuevoTotalProveedor > limiteProveedor) {
         setError(`Límite de gasto para el proveedor "${nombreProveedor}" excedido. Límite: ${limiteProveedor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}. Gasto actual: ${totalProveedorActual.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
-        return; // Detiene el proceso
+        return;
       }
       
       if (limiteMes > 0 && nuevoTotalMes > limiteMes) {
         setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido. Límite: ${limiteMes.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}. Gasto actual: ${totalMesActual.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
-        return; // Detiene el proceso
+        return;
       }
 
-      // 4. VERIFICACIÓN DE ADVERTENCIAS (95%)
       const advertencias = [];
       if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95) && nuevoTotalProveedor <= limiteProveedor) {
         advertencias.push(`- Se está acercando al límite de gasto del proveedor "${nombreProveedor}".`);
@@ -158,23 +138,15 @@ function RegistroFactura() {
       }
       
       if (advertencias.length > 0) {
-        // Se usa window.confirm para dar la opción de continuar o cancelar
         const continuar = window.confirm("ADVERTENCIA:\n\n" + advertencias.join('\n') + "\n\n¿Desea continuar de todos modos?");
-        if (!continuar) {
-          return; // El usuario canceló, no se registra la factura.
-        }
+        if (!continuar) return;
       }
-      
       // --- FIN DE LA LÓGICA DE VALIDACIÓN ---
 
-      // Si todas las validaciones pasan, se crea la factura
       const nuevaFactura = {
-        idProveedor,
-        nombreProveedor,
-        numeroFactura,
+        idProveedor, nombreProveedor, numeroFactura,
         descripcion: descripcion.trim(),
-        monto: montoNumerico,
-        estatus,
+        monto: montoNumerico, estatus,
         fechaFactura: fechaFacturaDate,
         fechaRegistro: new Date()
       };
@@ -185,13 +157,8 @@ function RegistroFactura() {
       await recalcularTotalMes(nuevaFactura.fechaFactura);
       
       setMensajeExito("Factura registrada con éxito.");
-      // Limpiar el formulario
-      setIdProveedor('');
-      setNombreProveedor('');
-      setNumeroFactura('');
-      setDescripcion('');
-      setMonto('');
-      setEstatus('');
+      setIdProveedor(''); setNombreProveedor(''); setNumeroFactura('');
+      setDescripcion(''); setMonto(''); setEstatus('');
       setFechaFactura(getTodayDateString());
 
     } catch (err) {
@@ -200,23 +167,12 @@ function RegistroFactura() {
     }
   };
 
-  if (cargando) {
-    return <p className="loading-message">Cargando...</p>;
-  }
-
-  if (!currentUser) {
-    return (
-      <div className="registro-factura-container">
-        <h2>Registrar Nueva Factura</h2>
-        <p className="auth-message">Necesitas autenticarte para registrar una nueva factura.</p>
-      </div>
-    );
-  }
-
+  // El JSX no cambia, se deja como estaba.
   return (
     <div className="registro-factura-container">
       <h2>Registrar Nueva Factura</h2>
       <form onSubmit={handleSubmit} className="registro-form">
+        {/* ... todos los form-group y botones ... */}
         <div className="form-group">
           <label htmlFor="idProveedor">ID del Proveedor:</label>
           <select id="idProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
@@ -251,7 +207,7 @@ function RegistroFactura() {
           </select>
         </div>
         <div className="monto-group full-width">
-          <label htmlFor="limiteGasto">Monto:</label>
+          <label htmlFor="monto">Monto:</label>
           <div className="monto-controls">
             <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
             <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
