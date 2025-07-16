@@ -33,7 +33,7 @@ function Navigation() {
 
   return (
     <nav className="app-nav">
-      <Link to="/" className="nav-branding">Gestión</Link>
+      <Link to="/" className="nav-branding">Gestión de Compras Arteaga</Link>
 
       <div className="nav-links">
         <NavLink to="/ver-proveedores">Proveedores</NavLink>
