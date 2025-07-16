@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase.js';
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+// Se añaden collection, query y where para la consulta correcta del proveedor
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext';
@@ -20,8 +21,6 @@ function DetalleFactura() {
     const [formData, setFormData] = useState({});
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
-    
-    // --- NUEVO ESTADO PARA GUARDAR EL MONTO ORIGINAL ---
     const [montoOriginalParaValidacion, setMontoOriginalParaValidacion] = useState(0);
 
     const formatDateForInput = (date) => {
@@ -59,20 +58,18 @@ function DetalleFactura() {
     }, [facturaId]);
 
     const handleEditClick = () => {
-        // Al hacer clic en editar, se guarda el monto original.
         setMontoOriginalParaValidacion(factura.monto);
         setError('');
         setIsEditing(true);
     };
 
-    // ... (otras funciones como handleChange, ajustarMonto, etc. no cambian)
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const MIN_MONTO = 1;
-    const MAX_MONTO = 50000000;
+    const MAX_MONTO = 5000000;
 
     const ajustarMonto = (ajuste) => {
         const montoActual = parseFloat(formData.monto) || 0;
@@ -111,14 +108,20 @@ function DetalleFactura() {
 
         try {
             // --- VALIDACIÓN DEL LÍMITE DEL PROVEEDOR (LÓGICA CORREGIDA) ---
-            const proveedorSnap = await getDoc(doc(db, "proveedores", proveedorId));
-            const limiteProveedor = proveedorSnap.exists() ? proveedorSnap.data().limiteGasto : 0;
+            const proveedoresRef = collection(db, "proveedores");
+            const q = query(proveedoresRef, where("idProveedor", "==", proveedorId));
+            const querySnapshot = await getDocs(q);
+            
+            let limiteProveedor = 0;
+            if (!querySnapshot.empty) {
+                // Se asume que idProveedor es único, por lo que solo habrá un resultado.
+                limiteProveedor = querySnapshot.docs[0].data().limiteGasto || 0;
+            }
             
             if (limiteProveedor > 0) {
                 const totalProveedorSnap = await getDoc(doc(db, "totalProveedor", proveedorId));
                 const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
                 
-                // Se resta el monto original y se suma el nuevo para la validación.
                 const totalBaseProveedor = totalProveedorActual - montoOriginalParaValidacion;
                 const nuevoTotalProyectado = totalBaseProveedor + nuevoMonto;
 
@@ -128,11 +131,10 @@ function DetalleFactura() {
                 }
             }
 
-            // --- VALIDACIÓN DEL LÍMITE DEL MES (LÓGICA CORREGIDA) ---
+            // --- VALIDACIÓN DEL LÍMITE DEL MES ---
             const seCambioDeMes = oldFecha.getMonth() !== newFecha.getMonth() || oldFecha.getFullYear() !== newFecha.getFullYear();
 
             if (seCambioDeMes) {
-                // Si la factura se movió a un mes diferente.
                 const nuevoMesIndex = newFecha.getMonth();
                 const limiteNuevoMesSnap = await getDoc(doc(db, "limiteMes", String(nuevoMesIndex)));
                 const limiteNuevoMes = limiteNuevoMesSnap.exists() ? limiteNuevoMesSnap.data().monto : 0;
@@ -141,8 +143,6 @@ function DetalleFactura() {
                     const totalNuevoMesDocId = `${newFecha.getFullYear()}-${String(nuevoMesIndex + 1).padStart(2, '0')}`;
                     const totalNuevoMesSnap = await getDoc(doc(db, "totalMes", totalNuevoMesDocId));
                     const totalActualNuevoMes = totalNuevoMesSnap.exists() ? totalNuevoMesSnap.data().totaldeMes : 0;
-                    
-                    // Se suma el nuevo monto completo al total del nuevo mes.
                     const nuevoTotalProyectado = totalActualNuevoMes + nuevoMonto;
 
                     if (nuevoTotalProyectado > limiteNuevoMes) {
@@ -151,7 +151,6 @@ function DetalleFactura() {
                     }
                 }
             } else {
-                // Si la factura permanece en el mismo mes.
                 const mesIndex = newFecha.getMonth();
                 const limiteMesSnap = await getDoc(doc(db, "limiteMes", String(mesIndex)));
                 const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
@@ -160,8 +159,6 @@ function DetalleFactura() {
                     const totalMesDocId = `${newFecha.getFullYear()}-${String(mesIndex + 1).padStart(2, '0')}`;
                     const totalMesSnap = await getDoc(doc(db, "totalMes", totalMesDocId));
                     const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
-
-                    // Se resta el monto original y se suma el nuevo para la validación.
                     const totalBaseMes = totalMesActual - montoOriginalParaValidacion;
                     const nuevoTotalProyectado = totalBaseMes + nuevoMonto;
 
@@ -192,8 +189,7 @@ function DetalleFactura() {
         }
     };
 
-    // ... (handleDelete y generarPDF no cambian)
-     const handleDelete = async () => {
+    const handleDelete = async () => {
         if (!currentUser) return alert("Necesitas autenticarte para eliminar una factura.");
         
         if (window.confirm("¿Estás seguro de que quieres eliminar esta factura?")) {
@@ -298,7 +294,6 @@ function DetalleFactura() {
                         )}
                     </div>
                     <div className="detalle-acciones">
-                        {/* Se actualiza el botón para llamar a handleEditClick */}
                         <button className="btn btn-editar" onClick={handleEditClick}>✏️ Editar</button>
                         <button className="btn btn-eliminar" onClick={handleDelete}>🗑️ Eliminar</button>
                         <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir Detalles</button>
