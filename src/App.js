@@ -13,6 +13,7 @@ import GastosPorMes from './pages/GastosPorMes';
 import RegistroProveedor from './pages/RegistroProveedor';
 import LoginPage from './pages/LoginPage';
 import LimiteMes from './pages/LimiteMes';
+import AsignarFolio from './pages/AsignarFolio';
 
 // Importación de CSS
 import './App.css';
@@ -80,6 +81,7 @@ function App() {
               <Route path="/gastos-mes" element={<GastosPorMes />} />
               <Route path="/limite-mes" element={<LimiteMes />} /> 
               <Route path="/" element={<VerFacturas />} />
+              <Route path="/asignar-folio" element={<AsignarFolio />} /> 
             </Routes>
           </main>
         </div>

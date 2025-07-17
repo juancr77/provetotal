@@ -168,3 +168,75 @@ td.status-red {
   font-weight: bold;
   color: #721c24 !important; /* Color solicitado */
 }
+
+/* nuevas adaptaciones */
+
+/* Añade esto a tu archivo vistasTablas.css */
+
+/* Contenedor para los filtros y botones */
+.acciones-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap; /* Para que se ajuste en pantallas pequeñas */
+  gap: 1rem;
+}
+
+.filtros {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.filtros label {
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.filtros input[type="date"] {
+  padding: 8px;
+  border: 1px solid var(--color-borde);
+  border-radius: 6px;
+}
+
+.botones-accion {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Estilo para el nuevo botón de folio */
+.folio-button {
+  padding: 12px 20px;
+  background-color: #6c757d; /* Gris neutro */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.folio-button:hover {
+  background-color: #5a6268;
+}
+
+/* Estilos para la página de asignar folio */
+.info-folio {
+  text-align: center;
+  margin: 2rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.info-folio p {
+  margin: 0;
+  color: var(--color-texto-secundario);
+}
+
+.folio-actual {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--color-primario);
+}

@@ -36,7 +36,7 @@ function LoginPage() {
         {error && <p className="login-error">{error}</p>}
         <form className="login-form" onSubmit={handleLogin}>
           <div className="form-group">
-            <label htmlFor="email">Correo Electrónico</label>
+            <label htmlFor="email">Usuario</label>
             <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
           <div className="form-group">
