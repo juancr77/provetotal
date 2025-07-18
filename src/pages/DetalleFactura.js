@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase.js';
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext';
 import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/DetalleVista.css';
+
+const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
 function DetalleFactura() {
     const { currentUser } = useAuth();
@@ -23,7 +25,6 @@ function DetalleFactura() {
     const formatDateForInput = (date) => {
         if (!date) return '';
         const d = new Date(date);
-        // Ajuste para la zona horaria local antes de convertir a ISO string
         const offset = d.getTimezoneOffset() * 60000;
         const localDate = new Date(d.getTime() - offset);
         return localDate.toISOString().split('T')[0];
@@ -37,11 +38,9 @@ function DetalleFactura() {
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    const facturaData = { ...data, id: docSnap.id };
-                    setFactura(facturaData);
+                    setFactura({ ...data, id: docSnap.id });
                     setFormData({
                         ...data,
-                        // Formatear fechas para los inputs de tipo 'date'
                         fechaFactura: formatDateForInput(data.fechaFactura.toDate()),
                         fechaDePago: data.fechaDePago ? formatDateForInput(data.fechaDePago.toDate()) : '',
                         monto: String(data.monto)
@@ -60,7 +59,10 @@ function DetalleFactura() {
         fetchFactura();
     }, [facturaId]);
 
+    // --- FUNCIÓN CORREGIDA ---
     const handleEditClick = () => {
+        // Se asegura de guardar el monto actual de la factura antes de editar.
+        setMontoOriginalParaValidacion(factura.monto);
         setError('');
         setIsEditing(true);
     };
@@ -72,34 +74,89 @@ function DetalleFactura() {
     
     const handleUpdate = async (e) => {
         e.preventDefault();
+        setError('');
+
+        const oldFecha = factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : factura.fechaFactura;
+        const proveedorId = factura.idProveedor;
+        const nuevoMonto = parseFloat(formData.monto);
         
-        // Aquí iría la misma lógica de validación de límites que en RegistroFactura, pero adaptada para la edición.
-        // (Se omite por brevedad, pero debe calcular el delta del monto como se analizó previamente).
+        const [year, month, day] = formData.fechaFactura.split('-').map(Number);
+        const newFecha = new Date(year, month - 1, day);
 
         try {
-            const nuevoMonto = parseFloat(formData.monto);
-            const [year, month, day] = formData.fechaFactura.split('-').map(Number);
-            const newFecha = new Date(year, month - 1, day);
+            const proveedoresRef = collection(db, "proveedores");
+            const q = query(proveedoresRef, where("idProveedor", "==", proveedorId));
+            const querySnapshot = await getDocs(q);
+            
+            let limiteProveedor = 0;
+            if (!querySnapshot.empty) {
+                limiteProveedor = querySnapshot.docs[0].data().limiteGasto || 0;
+            }
+            
+            if (limiteProveedor > 0) {
+                const totalProveedorSnap = await getDoc(doc(db, "totalProveedor", proveedorId));
+                const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
+                const totalBaseProveedor = totalProveedorActual - montoOriginalParaValidacion;
+                const nuevoTotalProyectado = totalBaseProveedor + nuevoMonto;
 
+                if (nuevoTotalProyectado > limiteProveedor) {
+                    setError(`Límite de gasto para el proveedor excedido.`);
+                    return;
+                }
+            }
+
+            const seCambioDeMes = oldFecha.getMonth() !== newFecha.getMonth() || oldFecha.getFullYear() !== newFecha.getFullYear();
+
+            if (seCambioDeMes) {
+                const nuevoMesIndex = newFecha.getMonth();
+                const limiteNuevoMesSnap = await getDoc(doc(db, "limiteMes", String(nuevoMesIndex)));
+                const limiteNuevoMes = limiteNuevoMesSnap.exists() ? limiteNuevoMesSnap.data().monto : 0;
+
+                if (limiteNuevoMes > 0) {
+                    const totalNuevoMesDocId = `${newFecha.getFullYear()}-${String(nuevoMesIndex + 1).padStart(2, '0')}`;
+                    const totalNuevoMesSnap = await getDoc(doc(db, "totalMes", totalNuevoMesDocId));
+                    const totalActualNuevoMes = totalNuevoMesSnap.exists() ? totalNuevoMesSnap.data().totaldeMes : 0;
+                    const nuevoTotalProyectado = totalActualNuevoMes + nuevoMonto;
+
+                    if (nuevoTotalProyectado > limiteNuevoMes) {
+                        setError(`Límite de gasto para ${nombresMeses[nuevoMesIndex]} excedido.`);
+                        return;
+                    }
+                }
+            } else {
+                const mesIndex = newFecha.getMonth();
+                const limiteMesSnap = await getDoc(doc(db, "limiteMes", String(mesIndex)));
+                const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
+
+                if (limiteMes > 0) {
+                    const totalMesDocId = `${newFecha.getFullYear()}-${String(mesIndex + 1).padStart(2, '0')}`;
+                    const totalMesSnap = await getDoc(doc(db, "totalMes", totalMesDocId));
+                    const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
+                    const totalBaseMes = totalMesActual - montoOriginalParaValidacion;
+                    const nuevoTotalProyectado = totalBaseMes + nuevoMonto;
+
+                    if (nuevoTotalProyectado > limiteMes) {
+                        setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido.`);
+                        return;
+                    }
+                }
+            }
+
+            const docRef = doc(db, "facturas", facturaId);
             const dataToUpdate = { 
                 ...formData, 
                 monto: nuevoMonto, 
                 fechaFactura: newFecha,
-                // Convierte la fecha de pago a Date o la guarda como null si está vacía
                 fechaDePago: formData.fechaDePago ? new Date(formData.fechaDePago + 'T00:00:00') : null
             };
 
-            await updateDoc(doc(db, "facturas", facturaId), dataToUpdate);
-
-            // Recalcular totales para el proveedor y el/los mes(es) afectado(s)
+            await updateDoc(docRef, dataToUpdate);
             await recalcularTotalProveedor(factura.idProveedor);
-            await recalcularTotalMes(newFecha); // Recalcula para el nuevo mes
-            // Si la fecha original era de un mes diferente, también hay que recalcular el mes antiguo
-            if (factura.fechaFactura.toDate().getMonth() !== newFecha.getMonth() || factura.fechaFactura.toDate().getFullYear() !== newFecha.getFullYear()) {
-                await recalcularTotalMes(factura.fechaFactura.toDate());
+            await recalcularTotalMes(newFecha);
+            if (seCambioDeMes) {
+                await recalcularTotalMes(oldFecha);
             }
 
-            // Actualizar estado local para reflejar los cambios en la UI
             setFactura({ ...dataToUpdate, id: facturaId });
             setIsEditing(false);
 
@@ -110,14 +167,12 @@ function DetalleFactura() {
     };
 
     const handleDelete = async () => {
-        if (window.confirm("¿Estás seguro de que deseas eliminar esta factura? Esta acción no se puede deshacer.")) {
+        if (window.confirm("¿Estás seguro de que deseas eliminar esta factura?")) {
             try {
-                // Primero se elimina el documento
+                const fechaParaRecalcular = factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : factura.fechaFactura;
                 await deleteDoc(doc(db, "facturas", facturaId));
-                // Luego se recalculan los totales para que reflejen la eliminación
                 await recalcularTotalProveedor(factura.idProveedor);
-                await recalcularTotalMes(factura.fechaFactura.toDate());
-                // Finalmente, se navega de vuelta a la lista
+                await recalcularTotalMes(fechaParaRecalcular);
                 navigate('/ver-facturas');
             } catch (err) {
                 console.error(err);
@@ -139,10 +194,10 @@ function DetalleFactura() {
                         <dl className="info-grid">
                             <dt>Proveedor:</dt><dd>{factura.nombreProveedor}</dd>
                             <dt>Número de Factura:</dt><dd>{factura.numeroFactura}</dd>
-                            <dt>Fecha de Factura:</dt><dd>{factura.fechaFactura.toDate().toLocaleDateString()}</dd>
+                            <dt>Fecha de Factura:</dt><dd>{(factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : factura.fechaFactura).toLocaleDateString()}</dd>
                             <dt>Dependencia:</dt><dd>{factura.dependencia || 'N/A'}</dd>
                             <dt>Forma de Pago:</dt><dd>{factura.formaDePago || 'N/A'}</dd>
-                            <dt>Fecha de Pago:</dt><dd>{factura.fechaDePago ? factura.fechaDePago.toDate().toLocaleDateString() : 'Pendiente'}</dd>
+                            <dt>Fecha de Pago:</dt><dd>{factura.fechaDePago ? (factura.fechaDePago.toDate ? factura.fechaDePago.toDate() : factura.fechaDePago).toLocaleDateString() : 'Pendiente'}</dd>
                             <dt>Descripción:</dt><dd>{factura.descripcion || 'N/A'}</dd>
                             <dt>Monto:</dt><dd>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</dd>
                             <dt>Estatus:</dt><dd><span className="status-badge" data-status={factura.estatus}>{factura.estatus}</span></dd>
@@ -155,17 +210,12 @@ function DetalleFactura() {
                 </>
             ) : (
                 <form className="detalle-form" onSubmit={handleUpdate}>
-                    {/* Campos existentes */}
                     <div className="form-group"><label>Proveedor:</label><input type="text" value={formData.nombreProveedor || ''} disabled readOnly /></div>
                     <div className="form-group"><label>Número de Factura:</label><input name="numeroFactura" type="text" value={formData.numeroFactura || ''} onChange={handleChange} required /></div>
                     <div className="form-group"><label>Fecha de Factura:</label><input name="fechaFactura" type="date" value={formData.fechaFactura || ''} onChange={handleChange} required /></div>
-                    
-                    {/* --- INICIO: Nuevos campos editables --- */}
                     <div className="form-group"><label>Dependencia:</label><input name="dependencia" type="text" value={formData.dependencia || ''} onChange={handleChange} required /></div>
                     <div className="form-group"><label>Forma de Pago:</label><select name="formaDePago" value={formData.formaDePago || ''} onChange={handleChange} required><option value="">-- Seleccione --</option><option value="Transferencia">Transferencia</option><option value="Efectivo">Efectivo</option><option value="Cheque">Cheque</option><option value="Otro">Otro</option></select></div>
                     <div className="form-group"><label>Fecha de Pago (Opcional):</label><input name="fechaDePago" type="date" value={formData.fechaDePago || ''} onChange={handleChange} /></div>
-                    {/* --- FIN: Nuevos campos editables --- */}
-
                     <div className="form-group"><label>Descripción:</label><textarea name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea></div>
                     <div className="form-group"><label>Monto:</label><input name="monto" type="number" value={formData.monto || ''} onChange={handleChange} step="0.01" required /></div>
                     <div className="form-group"><label>Estatus:</label><select name="estatus" value={formData.estatus || ''} onChange={handleChange} required><option value="">-- Seleccione --</option><option value="Pendiente">Pendiente</option><option value="Recibida">Recibida</option><option value="Con solventación">Con solventación</option><option value="En contabilidad">En contabilidad</option><option value="Pagada">Pagada</option></select></div>
