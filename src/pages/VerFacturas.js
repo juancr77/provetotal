@@ -51,6 +51,21 @@ function VerFacturas() {
         }
     }, [filtroFecha, facturas]);
 
+    // Función para auto-ajustar las columnas
+    const autoFitColumns = (worksheet) => {
+        worksheet.columns.forEach(column => {
+            let maxLength = 0;
+            column.eachCell({ includeEmpty: true }, cell => {
+                let cellLength = cell.value ? cell.value.toString().length : 10;
+                if (cellLength > maxLength) {
+                    maxLength = cellLength;
+                }
+            });
+            column.width = maxLength < 12 ? 12 : maxLength + 4;
+            if (column.width > 50) column.width = 50; // Se establece un ancho máximo
+        });
+    };
+
     const generateExcel = async () => {
         if (!currentUser) return alert("Necesitas autenticarte.");
         
@@ -59,13 +74,14 @@ function VerFacturas() {
             views: [{ state: 'frozen', ySplit: 7 }]
         });
 
+        worksheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 9999 };
+
         const response = await fetch('https://i.imgur.com/5mavo8r.png');
         const imageBuffer = await response.arrayBuffer();
         const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
         worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
         
         const contentStartRow = 6;
-        // Ajustado para 10 columnas (A hasta J)
         worksheet.mergeCells(`A${contentStartRow}:J${contentStartRow}`);
         const titleCell = worksheet.getCell(`A${contentStartRow}`);
         titleCell.value = "Listado General de Facturas";
@@ -75,7 +91,6 @@ function VerFacturas() {
 
         const headerRow = worksheet.getRow(contentStartRow + 1);
         headerRow.height = 25;
-        // Se actualizan las cabeceras con el nuevo orden y campos
         headerRow.values = ['Fecha', 'Número de Factura', 'Dependencia', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus', 'Forma de Pago', 'Fecha de Pago'];
         headerRow.eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
@@ -84,7 +99,6 @@ function VerFacturas() {
         });
 
         facturas.forEach(factura => {
-            // Se añaden los datos en el nuevo orden
             worksheet.addRow([
                 factura.fechaFactura.toDate(),
                 factura.numeroFactura,
@@ -106,17 +120,18 @@ function VerFacturas() {
                 if (rowNumber % 2 === 0) {
                     row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
                 }
-                // La columna de estatus ahora es la 8
                 const statusCell = row.getCell(8);
                 const statusColor = statusColors[statusCell.value];
                 if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
             }
         });
         
-        worksheet.getColumn(1).numFmt = 'dd/mm/yyyy'; // Fecha
-        worksheet.getColumn(7).numFmt = '$#,##0.00';  // Monto
-        worksheet.getColumn(10).numFmt = 'dd/mm/yyyy'; // Fecha de Pago
-        worksheet.columns.forEach(column => { column.width = 25; });
+        worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
+        worksheet.getColumn(7).numFmt = '$#,##0.00';
+        worksheet.getColumn(10).numFmt = 'dd/mm/yyyy';
+
+        // --- CAMBIO: Se llama a la función de auto-ajuste ---
+        autoFitColumns(worksheet);
         
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), 'Listado_General_Facturas.xlsx');
@@ -145,19 +160,19 @@ function VerFacturas() {
             const worksheet = workbook.addWorksheet("Reporte del Día", {
                 views: [{ state: 'frozen', ySplit: 9 }]
             });
+            
+            worksheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 9999 };
 
+            // --- CORRECCIÓN: Se restaura la imagen en el reporte diario ---
             const response = await fetch('https://i.imgur.com/5mavo8r.png');
             const imageBuffer = await response.arrayBuffer();
             const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
             worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
 
             worksheet.getRow(6).height = 20;
-            
             worksheet.mergeCells('A7:C7');
             worksheet.getCell('A7').value = `Fecha del Reporte: ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
             worksheet.getCell('A7').font = { bold: true, size: 12 };
-
-            // Folio ajustado a la derecha
             worksheet.mergeCells('H7:J7');
             worksheet.getCell('H7').alignment = { horizontal: 'right' };
             worksheet.getCell('H7').value = `Folio: ${formattedFolio}`;
@@ -165,7 +180,6 @@ function VerFacturas() {
 
             const titleRow = worksheet.getRow(8);
             titleRow.height = 30;
-            // Título abarca todas las columnas
             worksheet.mergeCells('A8:J8');
             const titleCell = worksheet.getCell('A8');
             titleCell.value = `Listado de Facturas - ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
@@ -203,17 +217,18 @@ function VerFacturas() {
                     if (rowNumber % 2 !== 0) {
                         row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
                     }
-                    // La columna de estatus ahora es la 8
                     const statusCell = row.getCell(8);
                     const statusColor = statusColors[statusCell.value];
                     if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
                 }
             });
 
-            worksheet.getColumn(1).numFmt = 'dd/mm/yyyy'; // Fecha
-            worksheet.getColumn(7).numFmt = '$#,##0.00';  // Monto
-            worksheet.getColumn(10).numFmt = 'dd/mm/yyyy'; // Fecha de Pago
-            worksheet.columns.forEach(column => { column.width = 25; });
+            worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
+            worksheet.getColumn(7).numFmt = '$#,##0.00';
+            worksheet.getColumn(10).numFmt = 'dd/mm/yyyy';
+            
+            // --- CAMBIO: Se llama a la función de auto-ajuste ---
+            autoFitColumns(worksheet);
 
             const buffer = await workbook.xlsx.writeBuffer();
             saveAs(new Blob([buffer]), `Reporte_Facturas_${filtroFecha}_Folio_${formattedFolio}.xlsx`);
