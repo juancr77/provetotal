@@ -22,6 +22,13 @@ function RegistroFactura() {
     const [monto, setMonto] = useState('');
     const [estatus, setEstatus] = useState('');
     const [fechaFactura, setFechaFactura] = useState(getTodayDateString());
+    
+    // --- INICIO: Nuevos campos ---
+    const [dependencia, setDependencia] = useState('');
+    const [formaDePago, setFormaDePago] = useState('');
+    const [fechaDePago, setFechaDePago] = useState('');
+    // --- FIN: Nuevos campos ---
+
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(null);
     const [mensajeExito, setMensajeExito] = useState('');
@@ -99,8 +106,9 @@ function RegistroFactura() {
         setError(null);
         setMensajeExito('');
 
-        if (!idProveedor || !numeroFactura || !monto || !estatus || !fechaFactura) {
-            setError("Todos los campos, excepto descripción, son obligatorios.");
+        // Se añaden los nuevos campos requeridos a la validación
+        if (!idProveedor || !numeroFactura || !monto || !estatus || !fechaFactura || !dependencia.trim() || !formaDePago) {
+            setError("Todos los campos, excepto descripción y fecha de pago, son obligatorios.");
             return;
         }
         
@@ -109,24 +117,20 @@ function RegistroFactura() {
         const fechaFacturaDate = new Date(year, month - 1, day);
 
         try {
-            // --- 1. VALIDACIÓN DEL PROVEEDOR (LÓGICA ORIGINAL) ---
+            // --- 1. VALIDACIÓN DEL PROVEEDOR ---
             const proveedorSeleccionado = proveedores.find(p => p.idProveedor === idProveedor);
             const limiteProveedor = proveedorSeleccionado?.limiteGasto || 0;
-            
             const totalProveedorDocRef = doc(db, "totalProveedor", idProveedor);
             const totalProveedorSnap = await getDoc(totalProveedorDocRef);
             const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
             const nuevoTotalProveedor = totalProveedorActual + montoNumerico;
 
-            // --- 2. VALIDACIÓN DEL MES (LÓGICA CORREGIDA) ---
+            // --- 2. VALIDACIÓN DEL MES ---
             const mesIndex = fechaFacturaDate.getMonth();
             const anio = fechaFacturaDate.getFullYear();
-            
             const limiteMesDocRef = doc(db, "limiteMes", String(mesIndex));
             const limiteMesSnap = await getDoc(limiteMesDocRef);
             const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
-            
-            // Se usa mesIndex + 1 para generar el ID correcto del documento (ej: 2025-07)
             const totalMesDocId = `${anio}-${String(mesIndex + 1).padStart(2, '0')}`;
             const totalMesDocRef = doc(db, "totalMes", totalMesDocId);
             const totalMesSnap = await getDoc(totalMesDocRef);
@@ -138,13 +142,12 @@ function RegistroFactura() {
                 setError(`Límite de gasto para el proveedor "${nombreProveedor}" excedido. Límite: ${limiteProveedor.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
                 return;
             }
-            
             if (limiteMes > 0 && nuevoTotalMes > limiteMes) {
                 setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido. Límite: ${limiteMes.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`);
                 return;
             }
 
-            // 4. VERIFICACIÓN DE ADVERTENCIAS (95%)
+            // --- 4. VERIFICACIÓN DE ADVERTENCIAS (95%) ---
             const advertencias = [];
             if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95) && nuevoTotalProveedor <= limiteProveedor) {
                 advertencias.push(`- Se está acercando al límite de gasto del proveedor "${nombreProveedor}".`);
@@ -152,7 +155,6 @@ function RegistroFactura() {
             if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95) && nuevoTotalMes <= limiteMes) {
                 advertencias.push(`- Se está acercando al límite de gasto para el mes de ${nombresMeses[mesIndex]}.`);
             }
-            
             if (advertencias.length > 0) {
                 const continuar = window.confirm("ADVERTENCIA:\n\n" + advertencias.join('\n') + "\n\n¿Desea continuar de todos modos?");
                 if (!continuar) {
@@ -160,6 +162,7 @@ function RegistroFactura() {
                 }
             }
             
+            // Se añaden los nuevos campos al objeto de la factura
             const nuevaFactura = {
                 idProveedor,
                 nombreProveedor,
@@ -168,16 +171,19 @@ function RegistroFactura() {
                 monto: montoNumerico,
                 estatus,
                 fechaFactura: fechaFacturaDate,
+                dependencia: dependencia.trim(),
+                formaDePago: formaDePago,
+                fechaDePago: fechaDePago ? new Date(fechaDePago + 'T00:00:00') : null, // Guarda null si no hay fecha
                 fechaRegistro: new Date()
             };
 
             await addDoc(collection(db, "facturas"), nuevaFactura);
-            
             await recalcularTotalProveedor(nuevaFactura.idProveedor);
             await recalcularTotalMes(nuevaFactura.fechaFactura);
             
             setMensajeExito("Factura registrada con éxito.");
             
+            // Limpieza de todos los campos del formulario
             setIdProveedor('');
             setNombreProveedor('');
             setNumeroFactura('');
@@ -185,6 +191,9 @@ function RegistroFactura() {
             setMonto('');
             setEstatus('');
             setFechaFactura(getTodayDateString());
+            setDependencia('');
+            setFormaDePago('');
+            setFechaDePago('');
 
         } catch (err) {
             console.error("Error al registrar la factura: ", err);
@@ -209,6 +218,7 @@ function RegistroFactura() {
         <div className="registro-factura-container">
             <h2>Registrar Nueva Factura</h2>
             <form onSubmit={handleSubmit} className="registro-form">
+                {/* --- Campos existentes --- */}
                 <div className="form-group">
                     <label htmlFor="idProveedor">ID del Proveedor:</label>
                     <select id="idProveedor" value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required>
@@ -231,6 +241,28 @@ function RegistroFactura() {
                     <label htmlFor="fechaFactura">Fecha de la Factura:</label>
                     <input id="fechaFactura" type="date" value={fechaFactura} onChange={(e) => setFechaFactura(e.target.value)} required />
                 </div>
+
+                {/* --- INICIO: Nuevos campos en el formulario --- */}
+                <div className="form-group">
+                    <label htmlFor="dependencia">Dependencia:</label>
+                    <input id="dependencia" type="text" value={dependencia} onChange={(e) => setDependencia(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="formaDePago">Forma de Pago:</label>
+                    <select id="formaDePago" value={formaDePago} onChange={(e) => setFormaDePago(e.target.value)} required>
+                        <option value="">-- Seleccione una opción --</option>
+                        <option value="Transferencia">Transferencia</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Cheque">Cheque</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="fechaDePago">Fecha de Pago (Opcional):</label>
+                    <input id="fechaDePago" type="date" value={fechaDePago} onChange={(e) => setFechaDePago(e.target.value)} />
+                </div>
+                {/* --- FIN: Nuevos campos en el formulario --- */}
+
                 <div className="form-group">
                     <label htmlFor="estatus">Estatus:</label>
                     <select id="estatus" value={estatus} onChange={(e) => setEstatus(e.target.value)} required>
@@ -259,6 +291,8 @@ function RegistroFactura() {
                     <label htmlFor="descripcion">Descripción (Opcional):</label>
                     <textarea id="descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows="3" />
                 </div>
+
+                {/* --- Botón de envío y mensajes --- */}
                 <div className="submit-button-container">
                     <button type="submit" className="submit-button">Registrar Factura</button>
                 </div>
