@@ -51,18 +51,21 @@ function VerFacturas() {
         }
     }, [filtroFecha, facturas]);
 
-    // Función para auto-ajustar las columnas
-    const autoFitColumns = (worksheet) => {
+    // --- FUNCIÓN MODIFICADA: Ignora los encabezados para el cálculo ---
+    const autoFitColumns = (worksheet, headerRowNumber) => {
         worksheet.columns.forEach(column => {
             let maxLength = 0;
-            column.eachCell({ includeEmpty: true }, cell => {
-                let cellLength = cell.value ? cell.value.toString().length : 10;
-                if (cellLength > maxLength) {
-                    maxLength = cellLength;
+            // Solo se itera sobre las celdas que están DESPUÉS de la cabecera
+            column.eachCell({ includeEmpty: true }, (cell, rowNum) => {
+                if (rowNum > headerRowNumber) {
+                    const cellLength = cell.value ? cell.value.toString().length : 0;
+                    if (cellLength > maxLength) {
+                        maxLength = cellLength;
+                    }
                 }
             });
-            column.width = maxLength < 12 ? 12 : maxLength + 4;
-            if (column.width > 50) column.width = 50; // Se establece un ancho máximo
+            column.width = maxLength < 10 ? 10 : maxLength + 2;
+            if (column.width > 50) column.width = 50;
         });
     };
 
@@ -74,7 +77,13 @@ function VerFacturas() {
             views: [{ state: 'frozen', ySplit: 7 }]
         });
 
-        worksheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 9999 };
+        worksheet.pageSetup = {
+            paperSize: 9,
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 1
+        };
 
         const response = await fetch('https://i.imgur.com/5mavo8r.png');
         const imageBuffer = await response.arrayBuffer();
@@ -90,12 +99,13 @@ function VerFacturas() {
         worksheet.getRow(contentStartRow).height = 30;
 
         const headerRow = worksheet.getRow(contentStartRow + 1);
-        headerRow.height = 25;
+        headerRow.height = 40; // Se aumenta un poco la altura para el texto ajustado
         headerRow.values = ['Fecha', 'Número de Factura', 'Dependencia', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus', 'Forma de Pago', 'Fecha de Pago'];
         headerRow.eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
+            // --- CAMBIO CLAVE: Se añade el ajuste de texto ---
+            cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
         });
 
         facturas.forEach(factura => {
@@ -115,7 +125,7 @@ function VerFacturas() {
         
         const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber > contentStartRow + 1) {
+            if (rowNumber > headerRow.rowNumber) {
                 row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
                 if (rowNumber % 2 === 0) {
                     row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
@@ -130,8 +140,7 @@ function VerFacturas() {
         worksheet.getColumn(7).numFmt = '$#,##0.00';
         worksheet.getColumn(10).numFmt = 'dd/mm/yyyy';
 
-        // --- CAMBIO: Se llama a la función de auto-ajuste ---
-        autoFitColumns(worksheet);
+        autoFitColumns(worksheet, headerRow.rowNumber);
         
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), 'Listado_General_Facturas.xlsx');
@@ -161,9 +170,14 @@ function VerFacturas() {
                 views: [{ state: 'frozen', ySplit: 9 }]
             });
             
-            worksheet.pageSetup = { paperSize: 9, orientation: 'landscape', fitToWidth: 1, fitToHeight: 9999 };
+            worksheet.pageSetup = {
+                paperSize: 9,
+                orientation: 'landscape',
+                fitToPage: true,
+                fitToWidth: 1,
+                fitToHeight: 1
+            };
 
-            // --- CORRECCIÓN: Se restaura la imagen en el reporte diario ---
             const response = await fetch('https://i.imgur.com/5mavo8r.png');
             const imageBuffer = await response.arrayBuffer();
             const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
@@ -187,12 +201,13 @@ function VerFacturas() {
             titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
 
             const headerRow = worksheet.getRow(9);
-            headerRow.height = 25;
+            headerRow.height = 40; // Se aumenta un poco la altura para el texto ajustado
             headerRow.values = ['Fecha', 'Número de Factura', 'Dependencia', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus', 'Forma de Pago', 'Fecha de Pago'];
             headerRow.eachCell((cell) => {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
                 cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
+                // --- CAMBIO CLAVE: Se añade el ajuste de texto ---
+                cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
             });
 
             facturasFiltradas.forEach(factura => {
@@ -212,7 +227,7 @@ function VerFacturas() {
 
             const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
             worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-                if (rowNumber > 9) {
+                if (rowNumber > headerRow.rowNumber) {
                     row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
                     if (rowNumber % 2 !== 0) {
                         row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
@@ -227,8 +242,7 @@ function VerFacturas() {
             worksheet.getColumn(7).numFmt = '$#,##0.00';
             worksheet.getColumn(10).numFmt = 'dd/mm/yyyy';
             
-            // --- CAMBIO: Se llama a la función de auto-ajuste ---
-            autoFitColumns(worksheet);
+            autoFitColumns(worksheet, headerRow.rowNumber);
 
             const buffer = await workbook.xlsx.writeBuffer();
             saveAs(new Blob([buffer]), `Reporte_Facturas_${filtroFecha}_Folio_${formattedFolio}.xlsx`);
