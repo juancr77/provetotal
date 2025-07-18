@@ -51,7 +51,6 @@ function VerFacturas() {
         }
     }, [filtroFecha, facturas]);
 
-    // --- FUNCIÓN RESTAURADA PARA EL REPORTE GENERAL ---
     const generateExcel = async () => {
         if (!currentUser) return alert("Necesitas autenticarte.");
         
@@ -66,7 +65,8 @@ function VerFacturas() {
         worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
         
         const contentStartRow = 6;
-        worksheet.mergeCells(`A${contentStartRow}:G${contentStartRow}`);
+        // Ajustado para 10 columnas (A hasta J)
+        worksheet.mergeCells(`A${contentStartRow}:J${contentStartRow}`);
         const titleCell = worksheet.getCell(`A${contentStartRow}`);
         titleCell.value = "Listado General de Facturas";
         titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -75,7 +75,8 @@ function VerFacturas() {
 
         const headerRow = worksheet.getRow(contentStartRow + 1);
         headerRow.height = 25;
-        headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
+        // Se actualizan las cabeceras con el nuevo orden y campos
+        headerRow.values = ['Fecha', 'Número de Factura', 'Dependencia', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus', 'Forma de Pago', 'Fecha de Pago'];
         headerRow.eachCell((cell) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
             cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -83,40 +84,44 @@ function VerFacturas() {
         });
 
         facturas.forEach(factura => {
+            // Se añaden los datos en el nuevo orden
             worksheet.addRow([
                 factura.fechaFactura.toDate(),
                 factura.numeroFactura,
+                factura.dependencia || 'N/A',
                 factura.idProveedor,
                 factura.nombreProveedor,
                 factura.descripcion || '',
                 factura.monto,
-                factura.estatus
+                factura.estatus,
+                factura.formaDePago || 'N/A',
+                factura.fechaDePago ? factura.fechaDePago.toDate() : 'Pendiente'
             ]);
         });
         
-        // El resto del código de formato y guardado para el Excel general...
         const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
         worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
             if (rowNumber > contentStartRow + 1) {
                 row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
                 if (rowNumber % 2 === 0) {
-                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 7) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
+                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
                 }
-                const statusCell = row.getCell(7);
+                // La columna de estatus ahora es la 8
+                const statusCell = row.getCell(8);
                 const statusColor = statusColors[statusCell.value];
                 if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
             }
         });
         
-        worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-        worksheet.getColumn(6).numFmt = '$#,##0.00';
+        worksheet.getColumn(1).numFmt = 'dd/mm/yyyy'; // Fecha
+        worksheet.getColumn(7).numFmt = '$#,##0.00';  // Monto
+        worksheet.getColumn(10).numFmt = 'dd/mm/yyyy'; // Fecha de Pago
         worksheet.columns.forEach(column => { column.width = 25; });
         
         const buffer = await workbook.xlsx.writeBuffer();
         saveAs(new Blob([buffer]), 'Listado_General_Facturas.xlsx');
     };
 
-    // --- FUNCIÓN CORREGIDA PARA EL REPORTE DEL DÍA ---
     const generateExcelDelDia = async () => {
         if (!currentUser) return alert("Necesitas autenticarte.");
         if (!filtroFecha || facturasFiltradas.length === 0) {
@@ -146,20 +151,22 @@ function VerFacturas() {
             const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
             worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
 
-            worksheet.getRow(6).height = 20; // Espacio entre imagen y datos
+            worksheet.getRow(6).height = 20;
             
             worksheet.mergeCells('A7:C7');
             worksheet.getCell('A7').value = `Fecha del Reporte: ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
             worksheet.getCell('A7').font = { bold: true, size: 12 };
 
-            worksheet.mergeCells('E7:G7');
-            worksheet.getCell('E7').alignment = { horizontal: 'right' };
-            worksheet.getCell('E7').value = `Folio: ${formattedFolio}`;
-            worksheet.getCell('E7').font = { bold: true, size: 14, color: { argb: 'FFC00000' } };
+            // Folio ajustado a la derecha
+            worksheet.mergeCells('H7:J7');
+            worksheet.getCell('H7').alignment = { horizontal: 'right' };
+            worksheet.getCell('H7').value = `Folio: ${formattedFolio}`;
+            worksheet.getCell('H7').font = { bold: true, size: 14, color: { argb: 'FFC00000' } };
 
             const titleRow = worksheet.getRow(8);
             titleRow.height = 30;
-            worksheet.mergeCells('A8:G8');
+            // Título abarca todas las columnas
+            worksheet.mergeCells('A8:J8');
             const titleCell = worksheet.getCell('A8');
             titleCell.value = `Listado de Facturas - ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
             titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -167,7 +174,7 @@ function VerFacturas() {
 
             const headerRow = worksheet.getRow(9);
             headerRow.height = 25;
-            headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
+            headerRow.values = ['Fecha', 'Número de Factura', 'Dependencia', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus', 'Forma de Pago', 'Fecha de Pago'];
             headerRow.eachCell((cell) => {
                 cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
                 cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -178,29 +185,34 @@ function VerFacturas() {
                 worksheet.addRow([
                     factura.fechaFactura.toDate(),
                     factura.numeroFactura,
+                    factura.dependencia || 'N/A',
                     factura.idProveedor,
                     factura.nombreProveedor,
                     factura.descripcion || '',
                     factura.monto,
-                    factura.estatus
+                    factura.estatus,
+                    factura.formaDePago || 'N/A',
+                    factura.fechaDePago ? factura.fechaDePago.toDate() : 'Pendiente'
                 ]);
             });
 
             const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
             worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-                if (rowNumber > 9) { // Empezar a estilizar después de la cabecera
+                if (rowNumber > 9) {
                     row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
-                    if (rowNumber % 2 !== 0) { // Filas impares (11, 13...) para el estilo cebra
-                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 7) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
+                    if (rowNumber % 2 !== 0) {
+                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 8) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
                     }
-                    const statusCell = row.getCell(7);
+                    // La columna de estatus ahora es la 8
+                    const statusCell = row.getCell(8);
                     const statusColor = statusColors[statusCell.value];
                     if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
                 }
             });
 
-            worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-            worksheet.getColumn(6).numFmt = '$#,##0.00';
+            worksheet.getColumn(1).numFmt = 'dd/mm/yyyy'; // Fecha
+            worksheet.getColumn(7).numFmt = '$#,##0.00';  // Monto
+            worksheet.getColumn(10).numFmt = 'dd/mm/yyyy'; // Fecha de Pago
             worksheet.columns.forEach(column => { column.width = 25; });
 
             const buffer = await workbook.xlsx.writeBuffer();
@@ -221,32 +233,12 @@ function VerFacturas() {
             <div className="acciones-container">
                 <div className="filtros">
                     <label htmlFor="filtroFecha">Filtrar por fecha:</label>
-                    <input
-                        type="date"
-                        id="filtroFecha"
-                        value={filtroFecha}
-                        onChange={(e) => setFiltroFecha(e.target.value)}
-                    />
+                    <input type="date" id="filtroFecha" value={filtroFecha} onChange={(e) => setFiltroFecha(e.target.value)} />
                 </div>
                 <div className="botones-accion">
-                    <Link to="/asignar-folio">
-                        <button className="folio-button">Asignar Folio Inicial</button>
-                    </Link>
-                    <button 
-                        onClick={generateExcelDelDia} 
-                        disabled={!filtroFecha || facturasFiltradas.length === 0}
-                        className="excel-button"
-                    >
-                        Excel del Día
-                    </button>
-                    <button 
-                        onClick={generateExcel} 
-                        disabled={facturas.length === 0} 
-                        className="excel-button"
-                        style={{backgroundColor: '#007bff'}} // Color diferente para distinguirlo
-                    >
-                        Excel General
-                    </button>
+                    <Link to="/asignar-folio"><button className="folio-button">Asignar Folio Inicial</button></Link>
+                    <button onClick={generateExcelDelDia} disabled={!filtroFecha || facturasFiltradas.length === 0} className="excel-button">Excel del Día</button>
+                    <button onClick={generateExcel} disabled={facturas.length === 0} className="excel-button" style={{backgroundColor: '#007bff'}}>Excel General</button>
                 </div>
             </div>
             
@@ -256,33 +248,37 @@ function VerFacturas() {
                         <tr>
                             <th>Fecha</th>
                             <th>Número de Factura</th>
+                            <th>Dependencia</th>
                             <th>ID Proveedor</th>
                             <th>Proveedor</th>
                             <th>Descripción</th>
                             <th>Monto</th>
                             <th>Estatus</th>
+                            <th>Forma de Pago</th>
+                            <th>Fecha de Pago</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
                         {error ? (
-                            <tr><td colSpan="8" className="error-message">{error}</td></tr>
+                            <tr><td colSpan="11" className="error-message">{error}</td></tr>
                         ) : facturasFiltradas.length === 0 ? (
-                            <tr><td colSpan="8" className="empty-message">No hay facturas para mostrar.</td></tr>
+                            <tr><td colSpan="11" className="empty-message">No hay facturas para mostrar.</td></tr>
                         ) : (
                             facturasFiltradas.map(factura => (
                                 <tr key={factura.id}>
                                     <td>{factura.fechaFactura.toDate().toLocaleDateString()}</td>
                                     <td>{factura.numeroFactura}</td>
+                                    <td>{factura.dependencia || 'N/A'}</td>
                                     <td>{factura.idProveedor}</td>
                                     <td>{factura.nombreProveedor}</td>
                                     <td>{factura.descripcion || 'N/A'}</td>
                                     <td>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
-                                    <td className="status-cell" data-status={factura.estatus}>{factura.estatus}</td>
+                                    <td><span data-status={factura.estatus}>{factura.estatus}</span></td>
+                                    <td>{factura.formaDePago || 'N/A'}</td>
+                                    <td>{factura.fechaDePago ? factura.fechaDePago.toDate().toLocaleDateString() : 'Pendiente'}</td>
                                     <td>
-                                        <Link to={`/factura/${factura.id}`}>
-                                            <button className="detail-button">Ver Detalle</button>
-                                        </Link>
+                                        <Link to={`/factura/${factura.id}`}><button className="detail-button">Ver Detalle</button></Link>
                                     </td>
                                 </tr>
                             ))
