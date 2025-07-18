@@ -1,297 +1,197 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, doc, runTransaction } from "firebase/firestore";
-import { Link } from 'react-router-dom';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import { db } from '../firebase.js';
+import { collection, getDocs, addDoc, doc, getDoc } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
-import './css/vistasTablas.css';
+import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
+import './css/Formulario.css';
 
-function VerFacturas() {
+const getTodayDateString = () => {
+    const today = new Date();
+    const offset = today.getTimezoneOffset() * 60000;
+    const localDate = new Date(today.getTime() - offset);
+    return localDate.toISOString().split('T')[0];
+};
+
+function RegistroFactura() {
     const { currentUser } = useAuth();
-    const [facturas, setFacturas] = useState([]);
-    const [facturasFiltradas, setFacturasFiltradas] = useState([]);
-    const [filtroFecha, setFiltroFecha] = useState('');
+    const [proveedores, setProveedores] = useState([]);
+    const [idProveedor, setIdProveedor] = useState('');
+    const [nombreProveedor, setNombreProveedor] = useState('');
+    const [numeroFactura, setNumeroFactura] = useState('');
+    const [descripcion, setDescripcion] = useState('');
+    const [monto, setMonto] = useState('');
+    const [estatus, setEstatus] = useState('');
+    const [fechaFactura, setFechaFactura] = useState(getTodayDateString());
+    // --- NUEVOS ESTADOS ---
+    const [dependencia, setDependencia] = useState('');
+    const [formaDePago, setFormaDePago] = useState('');
+    const [fechaDePago, setFechaDePago] = useState('');
+
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState(null);
+    const [mensajeExito, setMensajeExito] = useState('');
+
+    const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
     useEffect(() => {
-        const obtenerFacturas = async () => {
+        const fetchProveedores = async () => {
             if (!currentUser) { setCargando(false); return; }
             try {
-                const facturasRef = collection(db, "facturas");
-                const q = query(facturasRef, orderBy("fechaFactura", "desc"));
-                const querySnapshot = await getDocs(q);
-                const listaFacturas = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-                setFacturas(listaFacturas);
-                setFacturasFiltradas(listaFacturas);
+                const querySnapshot = await getDocs(collection(db, "proveedores"));
+                const lista = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    const nombreCompleto = `${data.nombre} ${data.apellidoPaterno} ${data.apellidoMaterno || ''}`.trim();
+                    return { ...data, nombreCompleto, id: doc.id };
+                });
+                setProveedores(lista);
             } catch (err) {
-                setError("No se pudieron cargar los datos de las facturas.");
-                console.error("Error al obtener las facturas: ", err);
+                console.error("Error al obtener proveedores: ", err);
+                setError("No se pudieron cargar los proveedores.");
             } finally {
                 setCargando(false);
             }
         };
-        obtenerFacturas();
+        fetchProveedores();
     }, [currentUser]);
 
-    useEffect(() => {
-        if (filtroFecha) {
-            const fechaSeleccionada = new Date(filtroFecha + 'T00:00:00');
-            const inicioDia = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), fechaSeleccionada.getDate());
-            const finDia = new Date(inicioDia.getTime() + (24 * 60 * 60 * 1000 - 1));
-
-            const filtradas = facturas.filter(factura => {
-                const fechaFactura = factura.fechaFactura.toDate();
-                return fechaFactura >= inicioDia && fechaFactura <= finDia;
-            });
-            setFacturasFiltradas(filtradas);
+    const handleProviderSelection = (selectedId) => {
+        setIdProveedor(selectedId);
+        if (selectedId) {
+            const proveedorSeleccionado = proveedores.find(p => p.idProveedor === selectedId);
+            if (proveedorSeleccionado) { setNombreProveedor(proveedorSeleccionado.nombreCompleto); }
         } else {
-            setFacturasFiltradas(facturas);
+            setNombreProveedor('');
         }
-    }, [filtroFecha, facturas]);
-
-    // --- FUNCIÓN RESTAURADA PARA EL REPORTE GENERAL ---
-    const generateExcel = async () => {
-        if (!currentUser) return alert("Necesitas autenticarte.");
-        
-        const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet("Listado de Facturas", {
-            views: [{ state: 'frozen', ySplit: 7 }]
-        });
-
-        const response = await fetch('https://i.imgur.com/5mavo8r.png');
-        const imageBuffer = await response.arrayBuffer();
-        const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
-        worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
-        
-        const contentStartRow = 6;
-        worksheet.mergeCells(`A${contentStartRow}:G${contentStartRow}`);
-        const titleCell = worksheet.getCell(`A${contentStartRow}`);
-        titleCell.value = "Listado General de Facturas";
-        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
-        worksheet.getRow(contentStartRow).height = 30;
-
-        const headerRow = worksheet.getRow(contentStartRow + 1);
-        headerRow.height = 25;
-        headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
-        headerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
-            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-            cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        });
-
-        facturas.forEach(factura => {
-            worksheet.addRow([
-                factura.fechaFactura.toDate(),
-                factura.numeroFactura,
-                factura.idProveedor,
-                factura.nombreProveedor,
-                factura.descripcion || '',
-                factura.monto,
-                factura.estatus
-            ]);
-        });
-        
-        // El resto del código de formato y guardado para el Excel general...
-        const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
-        worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-            if (rowNumber > contentStartRow + 1) {
-                row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
-                if (rowNumber % 2 === 0) {
-                    row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 7) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
-                }
-                const statusCell = row.getCell(7);
-                const statusColor = statusColors[statusCell.value];
-                if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
-            }
-        });
-        
-        worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-        worksheet.getColumn(6).numFmt = '$#,##0.00';
-        worksheet.columns.forEach(column => { column.width = 25; });
-        
-        const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), 'Listado_General_Facturas.xlsx');
     };
 
-    // --- FUNCIÓN CORREGIDA PARA EL REPORTE DEL DÍA ---
-    const generateExcelDelDia = async () => {
-        if (!currentUser) return alert("Necesitas autenticarte.");
-        if (!filtroFecha || facturasFiltradas.length === 0) {
-            return alert("Selecciona una fecha con facturas para generar el reporte.");
-        }
+    const ajustarMonto = (ajuste) => {
+        const montoActual = parseFloat(monto) || 0;
+        let nuevoMonto = Math.max(0, montoActual + ajuste);
+        setMonto(nuevoMonto.toString());
+    };
 
-        const folioRef = doc(db, "numeroFolio", "folioActual");
+    const handleMontoChange = (e) => {
+        const valor = e.target.value;
+        if (valor === '') {
+            setMonto('');
+            return;
+        }
+        setMonto(valor);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!currentUser) return alert("Necesitas autenticarte.");
+        
+        setError(null);
+        setMensajeExito('');
+
+        if (!idProveedor || !numeroFactura || !monto || !estatus || !fechaFactura || !dependencia || !formaDePago) {
+            setError("Todos los campos, excepto descripción y fecha de pago, son obligatorios.");
+            return;
+        }
+        
+        const montoNumerico = parseFloat(monto);
+        const [year, month, day] = fechaFactura.split('-').map(Number);
+        const fechaFacturaDate = new Date(year, month - 1, day);
 
         try {
-            const folioParaReporte = await runTransaction(db, async (transaction) => {
-                const folioDoc = await transaction.get(folioRef);
-                if (!folioDoc.exists()) throw new Error("Folio no asignado. Ve a 'Asignar Folio Inicial'.");
-                const folioActual = folioDoc.data().valor;
-                transaction.update(folioRef, { valor: folioActual + 1 });
-                return folioActual;
-            });
+            const proveedorSeleccionado = proveedores.find(p => p.idProveedor === idProveedor);
+            const limiteProveedor = proveedorSeleccionado?.limiteGasto || 0;
+            const totalProveedorSnap = await getDoc(doc(db, "totalProveedor", idProveedor));
+            const totalProveedorActual = totalProveedorSnap.exists() ? totalProveedorSnap.data().totaldeprovedor : 0;
+            const nuevoTotalProveedor = totalProveedorActual + montoNumerico;
 
-            const formattedFolio = String(folioParaReporte).padStart(5, '0');
+            const mesIndex = fechaFacturaDate.getMonth();
+            const anio = fechaFacturaDate.getFullYear();
+            const limiteMesSnap = await getDoc(doc(db, "limiteMes", String(mesIndex)));
+            const limiteMes = limiteMesSnap.exists() ? limiteMesSnap.data().monto : 0;
+            const totalMesDocId = `${anio}-${String(mesIndex + 1).padStart(2, '0')}`;
+            const totalMesSnap = await getDoc(doc(db, "totalMes", totalMesDocId));
+            const totalMesActual = totalMesSnap.exists() ? totalMesSnap.data().totaldeMes : 0;
+            const nuevoTotalMes = totalMesActual + montoNumerico;
 
-            const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet("Reporte del Día", {
-                views: [{ state: 'frozen', ySplit: 9 }]
-            });
+            if (limiteProveedor > 0 && nuevoTotalProveedor > limiteProveedor) {
+                setError(`Límite de gasto para el proveedor "${nombreProveedor}" excedido.`);
+                return;
+            }
+            if (limiteMes > 0 && nuevoTotalMes > limiteMes) {
+                setError(`Límite de gasto para ${nombresMeses[mesIndex]} excedido.`);
+                return;
+            }
 
-            const response = await fetch('https://i.imgur.com/5mavo8r.png');
-            const imageBuffer = await response.arrayBuffer();
-            const imageId = workbook.addImage({ buffer: imageBuffer, extension: 'png' });
-            worksheet.addImage(imageId, { tl: { col: 0, row: 0 }, ext: { width: 350, height: 88 }});
-
-            worksheet.getRow(6).height = 20; // Espacio entre imagen y datos
+            const advertencias = [];
+            if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95)) {
+                advertencias.push(`- Se está acercando al límite de gasto del proveedor "${nombreProveedor}".`);
+            }
+            if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95)) {
+                advertencias.push(`- Se está acercando al límite de gasto para ${nombresMeses[mesIndex]}.`);
+            }
             
-            worksheet.mergeCells('A7:C7');
-            worksheet.getCell('A7').value = `Fecha del Reporte: ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
-            worksheet.getCell('A7').font = { bold: true, size: 12 };
+            if (advertencias.length > 0) {
+                const continuar = window.confirm("ADVERTENCIA:\n\n" + advertencias.join('\n') + "\n\n¿Desea continuar?");
+                if (!continuar) return;
+            }
+            
+            const nuevaFactura = {
+                idProveedor, nombreProveedor, numeroFactura, estatus, dependencia, formaDePago,
+                descripcion: descripcion.trim(),
+                monto: montoNumerico,
+                fechaFactura: fechaFacturaDate,
+                fechaDePago: fechaDePago ? new Date(fechaDePago + 'T00:00:00') : null,
+                fechaRegistro: new Date()
+            };
 
-            worksheet.mergeCells('E7:G7');
-            worksheet.getCell('E7').alignment = { horizontal: 'right' };
-            worksheet.getCell('E7').value = `Folio: ${formattedFolio}`;
-            worksheet.getCell('E7').font = { bold: true, size: 14, color: { argb: 'FFC00000' } };
+            await addDoc(collection(db, "facturas"), nuevaFactura);
+            await recalcularTotalProveedor(nuevaFactura.idProveedor);
+            await recalcularTotalMes(nuevaFactura.fechaFactura);
+            
+            setMensajeExito("Factura registrada con éxito.");
+            setIdProveedor(''); setNombreProveedor(''); setNumeroFactura(''); setDescripcion(''); setMonto('');
+            setEstatus(''); setDependencia(''); setFormaDePago(''); setFechaDePago('');
+            setFechaFactura(getTodayDateString());
 
-            const titleRow = worksheet.getRow(8);
-            titleRow.height = 30;
-            worksheet.mergeCells('A8:G8');
-            const titleCell = worksheet.getCell('A8');
-            titleCell.value = `Listado de Facturas - ${new Date(filtroFecha + 'T00:00:00').toLocaleDateString()}`;
-            titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-            titleCell.font = { bold: true, size: 16, color: { argb: 'FF2A4B7C' } };
-
-            const headerRow = worksheet.getRow(9);
-            headerRow.height = 25;
-            headerRow.values = ['Fecha', 'Número de Factura', 'ID Proveedor', 'Proveedor', 'Descripción', 'Monto', 'Estatus'];
-            headerRow.eachCell((cell) => {
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2A4B7C' } };
-                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                cell.alignment = { vertical: 'middle', horizontal: 'center' };
-            });
-
-            facturasFiltradas.forEach(factura => {
-                worksheet.addRow([
-                    factura.fechaFactura.toDate(),
-                    factura.numeroFactura,
-                    factura.idProveedor,
-                    factura.nombreProveedor,
-                    factura.descripcion || '',
-                    factura.monto,
-                    factura.estatus
-                ]);
-            });
-
-            const statusColors = { 'Pendiente': 'FFFFC7CE', 'Recibida': 'FFFFFF00', 'Con solventación': 'FFFFC0CB', 'En contabilidad': 'FFADD8E6', 'Pagada': 'FFC6EFCE' };
-            worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-                if (rowNumber > 9) { // Empezar a estilizar después de la cabecera
-                    row.eachCell({ includeEmpty: true }, cell => { cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }; });
-                    if (rowNumber % 2 !== 0) { // Filas impares (11, 13...) para el estilo cebra
-                        row.eachCell({ includeEmpty: true }, (cell, colNumber) => { if (colNumber !== 7) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' }}; }});
-                    }
-                    const statusCell = row.getCell(7);
-                    const statusColor = statusColors[statusCell.value];
-                    if (statusColor) { statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: statusColor }}; }
-                }
-            });
-
-            worksheet.getColumn(1).numFmt = 'dd/mm/yyyy';
-            worksheet.getColumn(6).numFmt = '$#,##0.00';
-            worksheet.columns.forEach(column => { column.width = 25; });
-
-            const buffer = await workbook.xlsx.writeBuffer();
-            saveAs(new Blob([buffer]), `Reporte_Facturas_${filtroFecha}_Folio_${formattedFolio}.xlsx`);
-
-        } catch (error) {
-            console.error("Error al generar el archivo Excel del día:", error);
-            alert("No se pudo generar el archivo: " + error.message);
+        } catch (err) {
+            console.error(err);
+            setError("No se pudo registrar la factura.");
         }
     };
-    
+
     if (cargando) return <p className="loading-message">Cargando...</p>;
-    if (!currentUser) return <div className="vista-container"><p className="auth-message">Necesitas autenticarte.</p></div>;
+    if (!currentUser) return <div className="registro-factura-container"><p>Necesitas autenticarte.</p></div>;
 
     return (
-        <div className="vista-container">
-            <h2>Lista de Facturas Registradas</h2>
-            <div className="acciones-container">
-                <div className="filtros">
-                    <label htmlFor="filtroFecha">Filtrar por fecha:</label>
-                    <input
-                        type="date"
-                        id="filtroFecha"
-                        value={filtroFecha}
-                        onChange={(e) => setFiltroFecha(e.target.value)}
-                    />
+        <div className="registro-factura-container">
+            <h2>Registrar Nueva Factura</h2>
+            <form onSubmit={handleSubmit} className="registro-form">
+                <div className="form-group"><label>ID del Proveedor:</label><select value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required><option value="">-- Seleccione por ID --</option>{proveedores.map(p => (<option key={p.id} value={p.idProveedor}>{p.idProveedor}</option>))}</select></div>
+                <div className="form-group"><label>Nombre del Proveedor:</label><select value={idProveedor} onChange={(e) => handleProviderSelection(e.target.value)} required><option value="">-- Seleccione por Nombre --</option>{[...proveedores].sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto)).map(p => (<option key={p.id} value={p.idProveedor}>{p.nombreCompleto}</option>))}</select></div>
+                <div className="form-group"><label>Número de Factura:</label><input type="text" value={numeroFactura} onChange={(e) => setNumeroFactura(e.target.value)} required /></div>
+                
+                <div className="form-group"><label htmlFor="dependencia">Dependencia:</label><input id="dependencia" type="text" value={dependencia} onChange={(e) => setDependencia(e.target.value)} required /></div>
+                <div className="form-group"><label htmlFor="formaDePago">Forma de Pago:</label><select id="formaDePago" value={formaDePago} onChange={(e) => setFormaDePago(e.target.value)} required><option value="">-- Seleccione --</option><option value="Transferencia">Transferencia</option><option value="Efectivo">Efectivo</option><option value="Tarjeta de Crédito">Tarjeta de Crédito</option><option value="Tarjeta de Débito">Tarjeta de Débito</option><option value="Cheque">Cheque</option></select></div>
+                <div className="form-group"><label htmlFor="fechaDePago">Fecha de Pago (Opcional):</label><input id="fechaDePago" type="date" value={fechaDePago} onChange={(e) => setFechaDePago(e.target.value)} /></div>
+
+                <div className="form-group"><label>Fecha de Factura:</label><input type="date" value={fechaFactura} onChange={(e) => setFechaFactura(e.target.value)} required /></div>
+                <div className="form-group"><label>Estatus:</label><select value={estatus} onChange={(e) => setEstatus(e.target.value)} required><option value="">-- Seleccione --</option><option value="Pendiente">Pendiente</option><option value="Recibida">Recibida</option><option value="Con solventación">Con solventación</option><option value="En contabilidad">En contabilidad</option><option value="Pagada">Pagada</option></select></div>
+                
+                <div className="monto-group full-width">
+                    <label>Monto:</label>
+                    <div className="monto-controls">
+                        <button type="button" onClick={() => ajustarMonto(-1000)}>-1000</button>
+                        <button type="button" onClick={() => ajustarMonto(-100)}>-100</button>
+                        <div className="monto-input-container"><span>$</span><input type="number" value={monto} onChange={handleMontoChange} step="0.01" required /></div>
+                        <button type="button" onClick={() => ajustarMonto(100)}>+100</button>
+                        <button type="button" onClick={() => ajustarMonto(1000)}>+1000</button>
+                    </div>
                 </div>
-                <div className="botones-accion">
-                    <Link to="/asignar-folio">
-                        <button className="folio-button">Asignar Folio Inicial</button>
-                    </Link>
-                    <button 
-                        onClick={generateExcelDelDia} 
-                        disabled={!filtroFecha || facturasFiltradas.length === 0}
-                        className="excel-button"
-                    >
-                        Excel del Día
-                    </button>
-                    <button 
-                        onClick={generateExcel} 
-                        disabled={facturas.length === 0} 
-                        className="excel-button"
-                        style={{backgroundColor: '#007bff'}} // Color diferente para distinguirlo
-                    >
-                        Excel General
-                    </button>
-                </div>
-            </div>
-            
-            <div className="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Número de Factura</th>
-                            <th>ID Proveedor</th>
-                            <th>Proveedor</th>
-                            <th>Descripción</th>
-                            <th>Monto</th>
-                            <th>Estatus</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {error ? (
-                            <tr><td colSpan="8" className="error-message">{error}</td></tr>
-                        ) : facturasFiltradas.length === 0 ? (
-                            <tr><td colSpan="8" className="empty-message">No hay facturas para mostrar.</td></tr>
-                        ) : (
-                            facturasFiltradas.map(factura => (
-                                <tr key={factura.id}>
-                                    <td>{factura.fechaFactura.toDate().toLocaleDateString()}</td>
-                                    <td>{factura.numeroFactura}</td>
-                                    <td>{factura.idProveedor}</td>
-                                    <td>{factura.nombreProveedor}</td>
-                                    <td>{factura.descripcion || 'N/A'}</td>
-                                    <td>{factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}</td>
-                                    <td className="status-cell" data-status={factura.estatus}>{factura.estatus}</td>
-                                    <td>
-                                        <Link to={`/factura/${factura.id}`}>
-                                            <button className="detail-button">Ver Detalle</button>
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+                <div className="form-group full-width"><label>Descripción (Opcional):</label><textarea value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows="3" /></div>
+                
+                <div className="submit-button-container"><button type="submit" className="submit-button">Registrar Factura</button></div>
+                {error && <p className="mensaje mensaje-error">{error}</p>}
+                {mensajeExito && <p className="mensaje mensaje-exito">{mensajeExito}</p>}
+            </form>
         </div>
     );
 }
-
-export default VerFacturas;
+export default RegistroFactura;
