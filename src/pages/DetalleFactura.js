@@ -231,5 +231,5 @@ function DetalleFactura() {
         </div>
     );
 }
-
+//copy que podemos alterar
 export default DetalleFactura;
