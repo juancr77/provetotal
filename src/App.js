@@ -14,6 +14,7 @@ import RegistroProveedor from './pages/RegistroProveedor';
 import LoginPage from './pages/LoginPage';
 import LimiteMes from './pages/LimiteMes';
 import AsignarFolio from './pages/AsignarFolio';
+import PoblarDatos from './pages/PoblarDatos';
 
 // Importación de CSS
 import './App.css';
@@ -82,6 +83,7 @@ function App() {
               <Route path="/limite-mes" element={<LimiteMes />} /> 
               <Route path="/" element={<VerFacturas />} />
               <Route path="/asignar-folio" element={<AsignarFolio />} /> 
+              <Route path="/poblar-datos" element={<PoblarDatos />} />
             </Routes>
           </main>
         </div>

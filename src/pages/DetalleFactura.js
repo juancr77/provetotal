@@ -237,6 +237,31 @@ function DetalleFactura() {
         docPDF.save(`Detalle_Factura_${factura.numeroFactura}.pdf`);
     };
 
+    const handleShare = async () => {
+        if (!factura) return;
+
+        const shareData = {
+            title: `Factura: ${factura.numeroFactura}`,
+            text: `Detalles de la factura de ${factura.nombreProveedor} por un monto de ${factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })}.`,
+            url: window.location.href
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+            } catch (err) {
+                console.error('Error al compartir:', err);
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(window.location.href);
+                alert('¡Enlace de la factura copiado al portapapeles!');
+            } catch (err) {
+                alert('No se pudo copiar el enlace.');
+            }
+        }
+    };
+
     if (cargando) return <p className="loading-message">Cargando...</p>;
     if (error && !isEditing) return <p className="mensaje mensaje-error">{error}</p>;
     if (!factura) return <p>No se encontró la factura.</p>;
@@ -263,6 +288,7 @@ function DetalleFactura() {
                         <button className="btn btn-editar" onClick={handleEditClick}>✏️ Editar</button>
                         <button className="btn btn-eliminar" onClick={handleDelete}>🗑️ Eliminar</button>
                         <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir Detalles</button>
+                        <button className="btn-compartir" onClick={handleShare}>🔗 Compartir</button>
                     </div>
                 </>
             ) : (
