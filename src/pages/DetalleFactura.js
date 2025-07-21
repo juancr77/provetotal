@@ -122,15 +122,15 @@ function DetalleFactura() {
         const newFecha = new Date(year, month - 1, day);
 
         try {
-            // --- INICIO: VALIDACIÓN DE NÚMERO DE FACTURA DUPLICADO ---
-            const facturasRef = collection(db, "facturas");
-            const qNumFactura = query(facturasRef, where("numeroFactura", "==", formData.numeroFactura.trim()));
-            const querySnapshotNumFactura = await getDocs(qNumFactura);
-            
-            if (!querySnapshotNumFactura.empty) {
-                const facturaEncontrada = querySnapshotNumFactura.docs[0];
-                if (facturaEncontrada.id !== facturaId) {
-                    alert('Error: El número de factura ya existe en otro registro.');
+            // --- INICIO: VALIDACIÓN DE NÚMERO DE FACTURA CORREGIDA ---
+            // Solo se ejecuta si el número de factura en el formulario es diferente al original.
+            if (formData.numeroFactura.trim() !== factura.numeroFactura) {
+                const facturasRef = collection(db, "facturas");
+                const qNumFactura = query(facturasRef, where("numeroFactura", "==", formData.numeroFactura.trim()));
+                const querySnapshotNumFactura = await getDocs(qNumFactura);
+                
+                if (!querySnapshotNumFactura.empty) {
+                    alert('Error: El nuevo número de factura ya existe en otro registro.');
                     return;
                 }
             }
