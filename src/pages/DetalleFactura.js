@@ -1,12 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase.js';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc, deleteDoc, addDoc, orderBy } from "firebase/firestore";
+import CreatableSelect from 'react-select/creatable';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useAuth } from '../auth/AuthContext';
 import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
 import './css/DetalleVista.css';
+
+const anadirNuevaDependencia = async (nombreDependencia) => {
+    const nombreLimpio = nombreDependencia.trim();
+    if (!nombreLimpio) return null;
+    try {
+        const dependenciasRef = collection(db, "dependencias");
+        const docRef = await addDoc(dependenciasRef, { nombre: nombreLimpio });
+        return { id: docRef.id, nombre: nombreLimpio };
+    } catch (error) {
+        console.error("Error al guardar la nueva dependencia:", error);
+        return null;
+    }
+};
 
 const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
@@ -18,6 +32,8 @@ function DetalleFactura() {
     const [factura, setFactura] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
+    const [dependencias, setDependencias] = useState([]);
+    const [creandoDependencia, setCreandoDependencia] = useState(false);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
     const [montoOriginalParaValidacion, setMontoOriginalParaValidacion] = useState(0);
@@ -31,11 +47,12 @@ function DetalleFactura() {
     };
 
     useEffect(() => {
-        const fetchFactura = async () => {
+        const fetchData = async () => {
             if (!facturaId) return;
             try {
                 const docRef = doc(db, "facturas", facturaId);
                 const docSnap = await getDoc(docRef);
+                
                 if (docSnap.exists()) {
                     const data = docSnap.data();
                     setFactura({ ...data, id: docSnap.id });
@@ -49,15 +66,38 @@ function DetalleFactura() {
                 } else {
                     setError("No se encontró la factura.");
                 }
+
+                const depSnapshot = await getDocs(query(collection(db, "dependencias"), orderBy("nombre")));
+                const listaDependencias = depSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setDependencias(listaDependencias);
+
             } catch (err) {
                 console.error(err);
-                setError("Error al cargar los datos de la factura.");
+                setError("Error al cargar los datos.");
             } finally {
                 setCargando(false);
             }
         };
-        fetchFactura();
+        fetchData();
     }, [facturaId]);
+
+    const opcionesDependencia = useMemo(() =>
+        dependencias.map(dep => ({ value: dep.nombre, label: dep.nombre })),
+    [dependencias]);
+
+    const handleDependenciaChange = (opcionSeleccionada) => {
+        setFormData(prev => ({ ...prev, dependencia: opcionSeleccionada ? opcionSeleccionada.value : '' }));
+    };
+
+    const handleCreateDependencia = async (inputValue) => {
+        setCreandoDependencia(true);
+        const nuevaDep = await anadirNuevaDependencia(inputValue);
+        if (nuevaDep) {
+            setDependencias(prev => [...prev, nuevaDep].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+            setFormData(prev => ({ ...prev, dependencia: nuevaDep.nombre }));
+        }
+        setCreandoDependencia(false);
+    };
 
     const handleEditClick = () => {
         setMontoOriginalParaValidacion(factura.monto);
@@ -82,6 +122,20 @@ function DetalleFactura() {
         const newFecha = new Date(year, month - 1, day);
 
         try {
+            // --- INICIO: VALIDACIÓN DE NÚMERO DE FACTURA DUPLICADO ---
+            const facturasRef = collection(db, "facturas");
+            const qNumFactura = query(facturasRef, where("numeroFactura", "==", formData.numeroFactura.trim()));
+            const querySnapshotNumFactura = await getDocs(qNumFactura);
+            
+            if (!querySnapshotNumFactura.empty) {
+                const facturaEncontrada = querySnapshotNumFactura.docs[0];
+                if (facturaEncontrada.id !== facturaId) {
+                    alert('Error: El número de factura ya existe en otro registro.');
+                    return;
+                }
+            }
+            // --- FIN: VALIDACIÓN ---
+
             const proveedoresRef = collection(db, "proveedores");
             const q = query(proveedoresRef, where("idProveedor", "==", proveedorId));
             const querySnapshot = await getDocs(q);
@@ -296,7 +350,20 @@ function DetalleFactura() {
                     <div className="form-group"><label>Proveedor:</label><input type="text" value={formData.nombreProveedor || ''} disabled readOnly /></div>
                     <div className="form-group"><label>Número de Factura:</label><input name="numeroFactura" type="text" value={formData.numeroFactura || ''} onChange={handleChange} required /></div>
                     <div className="form-group"><label>Fecha de Factura:</label><input name="fechaFactura" type="date" value={formData.fechaFactura || ''} onChange={handleChange} required /></div>
-                    <div className="form-group"><label>Dependencia:</label><input name="dependencia" type="text" value={formData.dependencia || ''} onChange={handleChange} required /></div>
+                    <div className="form-group">
+                        <label>Dependencia:</label>
+                        <CreatableSelect
+                            isClearable
+                            isDisabled={creandoDependencia}
+                            isLoading={creandoDependencia}
+                            onChange={handleDependenciaChange}
+                            onCreateOption={handleCreateDependencia}
+                            options={opcionesDependencia}
+                            value={opcionesDependencia.find(opt => opt.value === formData.dependencia) || null}
+                            placeholder="Busca o escribe para añadir..."
+                            formatCreateLabel={inputValue => `Añadir "${inputValue}"`}
+                        />
+                    </div>
                     <div className="form-group"><label>Forma de Pago:</label><select name="formaDePago" value={formData.formaDePago || ''} onChange={handleChange} required><option value="">-- Seleccione --</option><option value="Transferencia">Transferencia</option><option value="Efectivo">Efectivo</option><option value="Cheque">Cheque</option><option value="Otro">Otro</option></select></div>
                     <div className="form-group"><label>Fecha de Pago (Opcional):</label><input name="fechaDePago" type="date" value={formData.fechaDePago || ''} onChange={handleChange} /></div>
                     <div className="form-group"><label>Descripción:</label><textarea name="descripcion" value={formData.descripcion || ''} onChange={handleChange} rows="3"></textarea></div>
