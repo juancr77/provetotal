@@ -59,9 +59,7 @@ function DetalleFactura() {
         fetchFactura();
     }, [facturaId]);
 
-    // --- FUNCIÓN CORREGIDA ---
     const handleEditClick = () => {
-        // Se asegura de guardar el monto actual de la factura antes de editar.
         setMontoOriginalParaValidacion(factura.monto);
         setError('');
         setIsEditing(true);
@@ -181,6 +179,64 @@ function DetalleFactura() {
         }
     };
 
+    const generarPDF = async () => {
+        if (!currentUser || !factura) return alert("No se puede generar el PDF.");
+        
+        const docPDF = new jsPDF('p', 'pt', 'letter');
+        const pdfWidth = docPDF.internal.pageSize.getWidth();
+    
+        try {
+            const response = await fetch('https://i.imgur.com/5mavo8r.png');
+            const imageBlob = await response.blob();
+            const imageUrl = URL.createObjectURL(imageBlob);
+            docPDF.addImage(imageUrl, 'PNG', (pdfWidth - 350) / 2, 40, 350, 88);
+            URL.revokeObjectURL(imageUrl);
+        } catch (error) { console.error("Error al cargar la imagen de cabecera:", error); }
+    
+        const contentY = 150;
+        docPDF.setFontSize(18);
+        docPDF.setTextColor('#2A4B7C');
+        docPDF.text("Detalles de la Factura", pdfWidth / 2, contentY, { align: 'center' });
+    
+        const fechaFactura = factura.fechaFactura.toDate ? factura.fechaFactura.toDate() : factura.fechaFactura;
+        const fechaPago = factura.fechaDePago ? (factura.fechaDePago.toDate ? factura.fechaDePago.toDate() : factura.fechaDePago) : null;
+
+        const tableData = [
+            ['Proveedor', factura.nombreProveedor],
+            ['Número de Factura', factura.numeroFactura],
+            ['Fecha de Factura', fechaFactura.toLocaleDateString()],
+            ['Dependencia', factura.dependencia || 'N/A'],
+            ['Forma de Pago', factura.formaDePago || 'N/A'],
+            ['Fecha de Pago', fechaPago ? fechaPago.toLocaleDateString() : 'Pendiente'],
+            ['Descripción', factura.descripcion || 'N/A'],
+            ['Monto', factura.monto.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' })],
+            ['Estatus', factura.estatus]
+        ];
+        
+        const statusColors = { 'Pendiente': [255, 199, 206], 'Recibida': [255, 242, 204], 'Con solventación': [252, 221, 173], 'En contabilidad': [221, 235, 247], 'Pagada': [198, 239, 206] };
+    
+        autoTable(docPDF, {
+            startY: contentY + 20,
+            body: tableData,
+            theme: 'grid',
+            styles: { fontSize: 10, cellPadding: 8, valign: 'middle' },
+            columnStyles: { 0: { fontStyle: 'bold', fillColor: [240, 248, 255] } },
+            didDrawCell: (data) => {
+                if (data.section === 'body' && data.column.index === 1 && data.row.index === 8) {
+                    const status = String(data.cell.raw);
+                    const color = statusColors[status];
+                    if (color) {
+                        docPDF.setFillColor(...color);
+                        docPDF.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+                        docPDF.setTextColor(50, 50, 50);
+                        docPDF.text(status, data.cell.x + data.cell.padding('left'), data.cell.y + data.cell.height / 2, { baseline: 'middle' });
+                    }
+                }
+            }
+        });
+        docPDF.save(`Detalle_Factura_${factura.numeroFactura}.pdf`);
+    };
+
     if (cargando) return <p className="loading-message">Cargando...</p>;
     if (error && !isEditing) return <p className="mensaje mensaje-error">{error}</p>;
     if (!factura) return <p>No se encontró la factura.</p>;
@@ -206,6 +262,7 @@ function DetalleFactura() {
                     <div className="detalle-acciones">
                         <button className="btn btn-editar" onClick={handleEditClick}>✏️ Editar</button>
                         <button className="btn btn-eliminar" onClick={handleDelete}>🗑️ Eliminar</button>
+                        <button className="btn btn-secundario" onClick={generarPDF}>📄 Imprimir Detalles</button>
                     </div>
                 </>
             ) : (
@@ -231,5 +288,5 @@ function DetalleFactura() {
         </div>
     );
 }
-//copy que podemos alterar
+
 export default DetalleFactura;
