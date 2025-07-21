@@ -3,7 +3,7 @@ import { db } from '../firebase.js';
 import { collection, query, where, getDocs, addDoc, doc, getDoc, orderBy } from "firebase/firestore";
 import { useAuth } from '../auth/AuthContext';
 import { recalcularTotalProveedor, recalcularTotalMes } from '../totals.js';
-import CreatableSelect from 'react-select/creatable'; // Se importa el componente de búsqueda
+import CreatableSelect from 'react-select/creatable';
 import './css/Formulario.css';
 
 // --- INICIO: Lógica para añadir nuevas dependencias ---
@@ -43,7 +43,6 @@ function RegistroFactura() {
     const [formaDePago, setFormaDePago] = useState('');
     const [fechaDePago, setFechaDePago] = useState('');
 
-    // Nuevos estados para el buscador
     const [dependencias, setDependencias] = useState([]);
     const [creandoDependencia, setCreandoDependencia] = useState(false);
 
@@ -57,7 +56,6 @@ function RegistroFactura() {
         const fetchInitialData = async () => {
             if (!currentUser) { setCargando(false); return; }
             try {
-                // Cargar Proveedores
                 const provSnapshot = await getDocs(collection(db, "proveedores"));
                 const listaProveedores = provSnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -66,7 +64,6 @@ function RegistroFactura() {
                 });
                 setProveedores(listaProveedores);
 
-                // Cargar Dependencias
                 const depSnapshot = await getDocs(query(collection(db, "dependencias"), orderBy("nombre")));
                 const listaDependencias = depSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setDependencias(listaDependencias);
@@ -93,7 +90,6 @@ function RegistroFactura() {
         }
     };
 
-    // --- Lógica para el buscador de Dependencia ---
     const opcionesDependencia = useMemo(() =>
         dependencias.map(dep => ({ value: dep.nombre, label: dep.nombre })),
     [dependencias]);
@@ -152,11 +148,22 @@ function RegistroFactura() {
             return;
         }
         
-        const montoNumerico = parseFloat(monto);
-        const [year, month, day] = fechaFactura.split('-').map(Number);
-        const fechaFacturaDate = new Date(year, month - 1, day);
-
         try {
+            // --- INICIO: VALIDACIÓN DE NÚMERO DE FACTURA DUPLICADO (REINTEGRADA) ---
+            const facturasRef = collection(db, "facturas");
+            const q = query(facturasRef, where("numeroFactura", "==", numeroFactura.trim()));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                alert('Error: El número de factura ya existe. Por favor, verifícalo.');
+                return;
+            }
+            // --- FIN: VALIDACIÓN DE NÚMERO DE FACTURA DUPLICADO ---
+
+            const montoNumerico = parseFloat(monto);
+            const [year, month, day] = fechaFactura.split('-').map(Number);
+            const fechaFacturaDate = new Date(year, month - 1, day);
+
             const proveedorSeleccionado = proveedores.find(p => p.idProveedor === idProveedor);
             const limiteProveedor = proveedorSeleccionado?.limiteGasto || 0;
             const totalProveedorDocRef = doc(db, "totalProveedor", idProveedor);
@@ -185,10 +192,10 @@ function RegistroFactura() {
             }
 
             const advertencias = [];
-            if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95) && nuevoTotalProveedor <= limiteProveedor) {
+            if (limiteProveedor > 0 && nuevoTotalProveedor >= (limiteProveedor * 0.95)) {
                 advertencias.push(`- Se está acercando al límite de gasto del proveedor "${nombreProveedor}".`);
             }
-            if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95) && nuevoTotalMes <= limiteMes) {
+            if (limiteMes > 0 && nuevoTotalMes >= (limiteMes * 0.95)) {
                 advertencias.push(`- Se está acercando al límite de gasto para el mes de ${nombresMeses[mesIndex]}.`);
             }
             if (advertencias.length > 0) {
@@ -201,7 +208,7 @@ function RegistroFactura() {
             const nuevaFactura = {
                 idProveedor,
                 nombreProveedor,
-                numeroFactura,
+                numeroFactura: numeroFactura.trim(),
                 descripcion: descripcion.trim(),
                 monto: montoNumerico,
                 estatus,
@@ -267,7 +274,6 @@ function RegistroFactura() {
                     <label htmlFor="fechaFactura">Fecha de la Factura:</label>
                     <input id="fechaFactura" type="date" value={fechaFactura} onChange={(e) => setFechaFactura(e.target.value)} required />
                 </div>
-
                 <div className="form-group">
                     <label htmlFor="dependencia-select">Dependencia:</label>
                     <CreatableSelect
@@ -284,7 +290,6 @@ function RegistroFactura() {
                         noOptionsMessage={() => "No hay opciones, escribe para añadir."}
                     />
                 </div>
-
                 <div className="form-group">
                     <label htmlFor="formaDePago">Forma de Pago:</label>
                     <select id="formaDePago" value={formaDePago} onChange={(e) => setFormaDePago(e.target.value)} required>
@@ -327,7 +332,6 @@ function RegistroFactura() {
                     <label htmlFor="descripcion">Descripción (Opcional):</label>
                     <textarea id="descripcion" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} rows="3" />
                 </div>
-
                 <div className="submit-button-container">
                     <button type="submit" className="submit-button">Registrar Factura</button>
                 </div>
